@@ -13,3 +13,6 @@
 ### Usage
 - `[GUI]` double-click on `patch.sh`, or drag-n-drop `Beeper.AppImage` onto `patch.sh`
 - `[CLI]` `source patch.sh` or `source patch.sh "path/to/Beeper.AppImage"`
+
+----
+- <img width="600" height="600" alt="beeper systray icon drake meme" src="https://github.com/user-attachments/assets/55d02c30-a18c-432e-84ff-c4d6df6bc8a7" />
