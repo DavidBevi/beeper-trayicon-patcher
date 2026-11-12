@@ -3,16 +3,14 @@
 ### This script replaces the systray icons of Beeper for Linux with custom ones
 
 ### Dependencies
-- appimagetool.AppImage (from github.com/AppImage/appimagetool)
-- asar                  (from your package manager of choice)
+- asar [`[EXT SOURCE]`](https://github.com/electron/asar)
 
-### Required files
-- patch.sh `[this is the script]`
-- trayIcon.png `[download mine if you want]`
-- trayUnreadIcon.png `[download mine if you want]`
-- appimagetool.AppImage `[NOT INCLUDED, USE YOUR OWN]`
-- Beeper.AppImage `[NOT INCLUDED, USE YOUR OWN]`
+### Prep
+- download `patch.sh` (it's the script!)
+- download `trayIcon.png` (or provide your own)
+- download `trayUnreadIcon.png` (or provide your own)
+- download `appimagetool.AppImage` [`[EXT SOURCE]`](https://github.com/AppImage/appimagetool/releases/tag/continuous)
+- download `Beeper.AppImage` [`[EXT SOURCE]`](https://beeper.com)
 
-### The script checks everything
-- If everything is ok it's all automatic
-- If not you'll be told what's missing"
+### Usage
+- launch `patch.sh`, it'll tell you everything that matters
