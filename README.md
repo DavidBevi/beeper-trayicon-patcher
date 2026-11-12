@@ -1,4 +1,4 @@
-# beeper-trayicon-patcher
+# Beeper.AppImage trayIcon patcher
 This script replaces the systray icons of Beeper (Linux).
 It unpacks Beeper.AppImage, then unpacks the underlying ASAR archive,
 then finds the trayIcon/trayUnreadIcon files and replaces them, then
