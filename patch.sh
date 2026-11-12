@@ -1,25 +1,31 @@
 #!/usr/bin/env bash
 
-script_title="Beeper.AppImage trayIcon patcher v0.1"
+script_title="beeper-trayicon-patcher v0.2"
+# by DavidBevi - https://github.com/DavidBevi/beeper-trayicon-patcher
+
 script_description="
-This script replaces the systray icons of Beeper (Linux).
-It unpacks Beeper.AppImage, then unpacks the underlying ASAR archive,
-then finds the trayIcon/trayUnreadIcon files and replaces them, then
-repacks the ASAR archive and finally outputs a new AppImage.
+This script replaces the systray icons of Beeper AppImage (Linux)
+- First it unpacks the appimage and the inner asar archive
+- Then it replaces trayIcon and trayUnreadIcon files with custom ones
+- Finally it repacks the archive and the appimage
 
 DEPENDENCIES
-- appimagetool.AppImage (from github.com/AppImage/appimagetool)
-- asar                  (from your package manager of choice)
+- asar - https://github.com/electron/asar
+- appimagetool.AppImage - https://github.com/AppImage/appimagetool
+- Beeper.AppImage - https://beeper.com
 
 REQUIRED FILES ALONGSIDE THIS SCRIPT
-- Beeper.AppImage       (tested with v4.3.284)
-- appimagetool.AppImage (tested with build 370)
-- trayIcon.png          (any new icon, suggested size 32x32 pixels)
-- trayUnreadIcon.png    (any new icon, suggested size 32x32 pixels)
+- Beeper.AppImage -OR- its path passed as arg1
+- appimagetool.AppImage
+- trayIcon.png         (suggested size 32x32 px)
+- trayUnreadIcon.png   (suggested size 32x32 px)
 
 THE SCRIPT CHECKS EVERYTHING
-- If everything is ok it's all automatic
-- If not you'll be told what's missing"
+- If something's wrong you'll be told
+- If everything's good it's automatic
+
+OUTPUT
+-> Beeper-x86_64.AppImage ('x86_64' depends on cpu type)"
 
 # Funcs #######################################################################
 # #############################################################################
@@ -71,12 +77,20 @@ find_and_overwrite() {
 }
 
 main() {
+    local beeper_path="./Beeper.AppImage"
     # Print title and description
     print_section "$script_title"
     echo -e "$script_description\n"
     #
-    # When called with -h or --help return here
-    if [[ "$1" == *-h* ]]; then return 0; fi
+    # When called with -h or --help > return
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then return 0; fi
+    #
+    # When valid path is passed in terminal > use that
+    if [[ -f "$1" ]]; then beeper_path="$1"; fi
+    #
+    # When valid path is passed via drag-n-drop > WD is set to home
+    # If WD==home > extract correct WD from $0 and cd into it
+    if [[ $PWD == ~ ]]; then cd "${0%/*}" || :; fi
     #
     # Ask user to start or abort
     printblue "Working directory is $PWD"
@@ -87,7 +101,7 @@ main() {
     #
     print_section "Checking required files:"
     echo " ${PWD##*/}/"
-    if testfiles "Beeper.AppImage" "appimagetool.AppImage" "trayIcon.png" \
+    if testfiles "$beeper_path" "appimagetool.AppImage" "trayIcon.png" \
       "trayUnreadIcon.png";
         then printgreen "OK, required files available"
         else printyellow Aborted; return 0
@@ -101,10 +115,12 @@ main() {
     fi
     #
     print_section "Unpacking AppImg:"
-    if ./Beeper.AppImage --appimage-extract;
+    chmod +x "$beeper_path" # prevents unpacking issues
+    if $beeper_path --appimage-extract;
         then printgreen "OK --> Unpacked in bpr/squashfs-root/"
         else printred Error; printyellow Aborted; return 1
     fi
+    chmod -R a+rX squashfs-root # prevents repacking issues
     #
     print_section "Unpacking ASAR archive:"
     if asar extract squashfs-root/resources/app.asar app.asar.extracted;
@@ -147,7 +163,7 @@ main() {
     print_section "Cleaning up:"
     beeper_patcher_fails=0
     for dir in app.asar.extracted squashfs-root; do
-        echo -n "Deleting $dir "
+        echo -n "Deleting $dir/ (now unused) "
         if rm -rf $dir;
             then printgreen OK
             else printred KO; ((beeper_patcher_fails+=1))
@@ -166,6 +182,9 @@ main() {
 # is script already in an interactive shell?
 # -> if not relaunch with xdg-terminal-exec
 #    -> if error relaunch with konsole
-[[ -t 0 || -t 1 || -t 2 ]] && main $@ || {
-  if xdg-terminal-exec "$0"; then main $@; else konsole --noclose -e "$0"; fi
-}
+if [[ -t 0 || -t 1 || -t 2 ]]; then main "$@"; else
+    if xdg-terminal-exec "$0" "$@";
+        then main "$@";
+        else konsole --hold -e "$0" "$@";
+    fi
+fi
