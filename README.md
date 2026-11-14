@@ -15,4 +15,6 @@
 - `[CLI]` `source patch.sh` or `source patch.sh "path/to/Beeper.AppImage"`
 
 ----
+- <img width="600" height="589" alt="beeper-trayicon-patcher-screenshot-v1" src="https://github.com/user-attachments/assets/d8ded5a3-9ad5-4b94-82b9-255e315bb309" />
+
 - <img width="600" height="600" alt="beeper systray icon drake meme" src="https://github.com/user-attachments/assets/55d02c30-a18c-432e-84ff-c4d6df6bc8a7" />
