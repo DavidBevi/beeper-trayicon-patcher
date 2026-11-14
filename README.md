@@ -3,18 +3,20 @@
 ### Dependencies
 - install `asar` [`[EXT SOURCE]`](https://github.com/electron/asar)
 
-### Prep (in the same folder)
+### Prep
+Put in a directory of your choice:
+- your `Beeper.AppImage` (or download it from [`[EXT SOURCE]`](https://beeper.com))
 - download [`beeper-trayicon-patcher.sh`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Fbeeper-trayicon-patcher.sh) (it's the script!) 
 - download [`trayIcon.png`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayIcon.png) (or provide your own)
 - download [`trayUnreadIcon.png`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayUnreadIcon.png) (or provide your own)
 - download `appimagetool.AppImage` [`[EXT SOURCE]`](https://github.com/AppImage/appimagetool/releases/tag/continuous)
-- download `Beeper.AppImage` [`[EXT SOURCE]`](https://beeper.com)
 
 ### Usage
 - `[GUI]` double-click on `patch.sh`, or drag-n-drop `Beeper.AppImage` onto `patch.sh`
 - `[CLI]` `source patch.sh` or `source patch.sh "path/to/Beeper.AppImage"`
 
 ----
-- <img width="600" height="589" alt="beeper-trayicon-patcher-screenshot-v1" src="https://github.com/user-attachments/assets/d8ded5a3-9ad5-4b94-82b9-255e315bb309" />
 
-- <img width="600" height="600" alt="beeper systray icon drake meme" src="https://github.com/user-attachments/assets/55d02c30-a18c-432e-84ff-c4d6df6bc8a7" />
+<img width="600" height="589" alt="beeper-trayicon-patcher-screenshot-v1" src="https://github.com/user-attachments/assets/d8ded5a3-9ad5-4b94-82b9-255e315bb309" />
+
+<img width="600" height="600" alt="beeper systray icon drake meme" src="https://github.com/user-attachments/assets/55d02c30-a18c-432e-84ff-c4d6df6bc8a7" />
