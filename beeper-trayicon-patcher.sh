@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# BEEPER TRAYICON PATCHER v1 - by DavidBevi
+# BEEPER TRAYICON PATCHER v1.1 - by DavidBevi
 # - Brief: This script replaces the systray icons of Beeper AppImage (Linux)
 # - Download: https://github.com/DavidBevi/beeper-trayicon-patcher
 # - License: MIT (everything's allowed, no warranty)
 #
 # REQUIREMENTS
-# - asar installed             - https://github.com/electron/asar
-# - appimagetool.AppImage      - https://github.com/AppImage/appimagetool
 # - Beeper.AppImage            - https://beeper.com
+# - appimagetool.AppImage      - https://github.com/AppImage/appimagetool
+# - asar installed             - https://github.com/electron/asar
 # - a new trayIcon.png         - suggested size 32x32 px
 # - a new trayUnreadIcon.png   - suggested size 32x32 px
 #
@@ -27,39 +27,25 @@
 # when script is double-clicked but a cli doesn't show up this fixes it
 # it tries to summon your default terminal emulator, a fallback is hardcoded
 [[ -t 0 || -t 1 || -t 2 ]] || {
-  xdg-terminal-exec "$0" "$@" || konsole --hold -e "$0" "$@"; }
+  if xdg-terminal-exec "$0" "$@"; then return $?;
+  elif konsole --hold -e "$0" "$@"; then return $?;
+  fi; }
 
 # ENSURE CORRECT WORKING DIR
 # when script is launched with drag-n-drop $PWD==$HOME
 # this is wrong, so we use the path of the script
 [[ "$PWD" == "$HOME" ]] && { cd "${0%/*}" || :; }
 
-# BUILD THE GLOBALS
-# info shared between functions, packed into an associative array to minimize
-# collisions and simplify unsetting, for when the script is sourced
-declare -A AIP_PATH
-first_file_that_matches() { echo "${1%% *}"; }
-AIP_PATH[bpr]=$(first_file_that_matches ./*eeper*.*pp*mage)
-AIP_PATH[ait]=$(first_file_that_matches ./*pp*mage*ool*.*pp*mage)
-AIP_PATH[ty]=$(first_file_that_matches ./*ray?con.png)
-AIP_PATH[tuy]=$(first_file_that_matches ./*ray?nread?con.png)
-AIP_PATH[out]="Beeper-patched.AppImage"
-AIP_PATH[err]=""
+# THE NEXT LINE THAT GETS EXECUTED IS THE LAST ONE
+# what follows it's the entire patcher laid out in a single function
+# basically it's main(), but with a meaningful and unique name
+# this is done to retain a single functional object when sourced
+beeper-trayicon-patcher() {
+  # print_title ---------------------------------------------------------------
+  echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
-# #############################################################################
-# FUNCTIONS ###################################################################
-
-echoOK() { echo -e "\e[1;32mOK\e[0m"; }
-
-echoKO() { echo -e "\e[1;31mKO\e[0m"; }
-
-print_title() { echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"; }
-
-arg1_is_help() { # if arg1 isn't -h nor --help return 1 (=false in bash)
-  [[ "$1" == "-h" || "$1" == "--help" ]] || return 1
-}
-
-print_help() { echo "
+  # if_arg1_is_help_print_help ------------------------------------------------
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then echo "
 HELP PAGE
 - Brief: This script replaces the systray icons of Beeper AppImage (Linux)
 - Download: https://github.com/DavidBevi/beeper-trayicon-patcher
@@ -81,111 +67,135 @@ USAGE
 - you can launch it via cli as usual, by typing the path of this file.
 - you can also double-click it in your file manager to launch a cli.
 - you can also drag required files on this script in your file manager.
-"; }
+"; return 0; fi
 
-fetch_paths_from_args() {
+  # shared_variables ----------------------------------------------------------
+  local pathBPR pathAIT pathTY pathTUY pathOUT
+  local  argBPR  argAIT  argTY  argTUY  argOUT
+  local  errBPR  errAIT  errTY  errTUY  errOUT  errASAR
+  local N="\e[0m" R="\e[1;31m" G="\e[1;32m" Y="\e[1;33m"
+
+  # helper_functions ----------------------------------------------------------
+  echoOK() { echo -e "\e[1;32mOK\e[0m"; }
+  echoKO() { echo -e "\e[1;31mKO\e[0m"; }
+  echoABORT() { echo -e "${R}ABORT - EXIT$N\n"; }
+  echoCANCELLED() { echo -e "${G}CANCELLED - EXIT$N\n"; }
+  echoFINISHED() { echo -e "${G}FINISHED - EXIT$N\n"; }
+  first_file_that_matches() { echo "${1%% *}"; }
+  pretty_cat() { printf "Log: \e[3;38;5;225m"; cat "$1"; echo -e "\e[0m"; }
+
+  # find_required_files_in_working_directory ----------------------------------
+  pathBPR=$(first_file_that_matches ./*eeper*.*pp*mage)
+  pathAIT=$(first_file_that_matches ./*pp*mage*ool*.*pp*mage)
+  pathTY=$(first_file_that_matches ./*ray?con.png)
+  pathTUY=$(first_file_that_matches ./*ray?nread?con.png)
+  pathOUT="Beeper-patched.AppImage"
+
+  # fetch_paths_from_args -----------------------------------------------------
   for arg in "$@"; do
-    [[ -x "$arg" && "$arg" == *eeper*.*pp*mage ]] && AIP_PATH[bpr]="$arg"
-    [[ -x "$arg" && "$arg" == *pp*mage*ool*.*pp*mage ]] && AIP_PATH[ait]="$arg"
-    [[ "$arg" == *ray[^Uu]*(I|i)con.png ]] && AIP_PATH[ty]="$arg"
-    [[ "$arg" == *ray?nread?con.png ]] && AIP_PATH[tuy]="$arg"
-    [[ "$arg" == test ]] && echo
+    [[ -x "$arg" && "$arg" == *eeper*.*pp*mage ]] && argBPR="$arg"
+    [[ -x "$arg" && "$arg" == *pp*mage*ool*.*pp*mage ]] && argAIT="$arg"
+    [[ "$arg" == *ray[^Uu]*(I|i)con.png ]] && argTY="$arg"
+    [[ "$arg" == *ray?nread?con.png ]] && argTUY="$arg"
+    [[ "$arg" == --out=* || "$arg" == -o=* ]] && argOUT="${arg#*=}"
   done
-}
 
-validate_paths() { # test paths, invalid things get logged into AIP_PATH[err]
-  ${AIP_PATH[bpr]} --appimage-version >/dev/null 2>&1 || AIP_PATH[err]+="-bpr"
-  ${AIP_PATH[ait]} --appimage-version >/dev/null 2>&1 || AIP_PATH[err]+="-ait"
-  asar --version >/dev/null 2>&1 || AIP_PATH[err]+="-asar"
-  [[ -f "${AIP_PATH[ty]}" ]] || AIP_PATH[err]+="-ty"
-  [[ -f "${AIP_PATH[tuy]}" ]] || AIP_PATH[err]+="-tuy"
-  true 2>/dev/null >> "${AIP_PATH[out]}" || AIP_PATH[err]+="-out"
-}
+  # validate_paths ------------------------------------------------------------
+  # for each file do a test on the path provided as argument
+  # if it fails do a test on the path fetched from working dir
+  # if both fail flag a specific variable, we use it later to abort
+  # beeper
+  $argBPR --appimage-version >/dev/null 2>&1  && pathBPR="$argBPR" || {
+  $pathBPR --appimage-version >/dev/null 2>&1 || errBPR=1; }
+  # appimagetool
+  $argAIT --appimage-version >/dev/null 2>&1  && pathAIT="$argAIT" || {
+  $pathAIT --appimage-version >/dev/null 2>&1 || errAIT=1; }
+  # asar
+  asar --version >/dev/null 2>&1              || errASAR=1
+  # trayIcon
+  [[ -f "$argTY" ]]                           && pathTY="$argTY"   || {
+  [[ -f "$pathTY" ]]                          || errTY=1; }
+  # trayUnreadIcon
+  [[ -f "$argTUY" ]]                          && pathTUY="$argTUY" || {
+  [[ -f "$pathTUY" ]]                         || errTUY=1; }
+  # output
+  if [[ ! -f "$argOUT" ]] && touch "$argOUT" 2>/dev/null; then
+    pathOUT="$argOUT"; rm "$pathOUT"
+  elif [[ -f "$argOUT" ]] && true 2>/dev/null >> "$argOUT"; then
+    pathOUT="$argOUT"
+  elif [[ ! -f "$pathOUT" ]] && touch "$pathOUT" 2>/dev/null; then
+    rm "$pathOUT"
+  elif not true 2>/dev/null >> "$pathOUT"; then
+    errOUT=1
+  fi
 
-paths_are_bad() {
-  [[ -n "${AIP_PATH[err]}" ]] && return 0 || return 1
-}
-
-print_summary() {
-  local N="\e[0m" R="\e[1;31m" G="\e[1;32m" Y="\e[1;33m" col=""
+  # print_summary -------------------------------------------------------------
+  # uses the results of validation to set colors
+  local X
   echo -e "Working directory: $G$PWD$N"
-  #
-  [[ "${AIP_PATH[err]}" != *-bpr* ]] && col=$G || col=$R
-  echo -e "AppImage to patch: $col${AIP_PATH[bpr]}$N"
-  #
-  [[ "${AIP_PATH[err]}" != *-ty* ]] && col=$G || col=$R
-  echo -e "New trayIcon.png: $col${AIP_PATH[ty]}$N"
-  #
-  [[ "${AIP_PATH[err]}" != *-tuy* ]] && col=$G || col=$R
-  echo -e "New trayUnreadIcon.png: $col${AIP_PATH[tuy]}$N"
-  #
-  [[ "${AIP_PATH[err]}" != *-asar* ]] && col=${G} || col=${R}un
-  echo -e "asar (cli program): ${col}installed$N"
-  #
-  [[ "${AIP_PATH[err]}" != *-ait* ]] && col=${G} || col=${R}
-  [[ "${AIP_PATH[err]}" != *-ait* ]] && col=${G} || col=${R}
-  echo -e "appimagetool (file): $col${AIP_PATH[ait]}$N"
-  #
-  if [[ "${AIP_PATH[err]}" == *-out* ]]; then
-    echo -e "Output file: $R${AIP_PATH[out]}$N"
+  # beeper
+  [[ $errBPR ]] && X=$R || X=$G
+  echo -e "AppImage to patch: $X$pathBPR$N"
+  # appimagetool
+  [[ $errAIT ]] && X=$R || X=$G
+  echo -e "appimagetool (file): $X$pathAIT$N"
+  # asar
+  [[ $errASAR ]] && X=${R}un || X=$G
+  echo -e "asar (cli program): ${X}installed$N"
+  # trayIcon
+  [[ $errTY ]] && X=$R || X=$G
+  echo -e "New trayIcon.png: $X$pathTY$N"
+  # trayUnreadIcon
+  [[ $errTUY ]] && X=$R || X=$G
+  echo -e "New trayUnreadIcon.png: $X$pathTUY$N"
+  # output
+  if [[ $errOUT ]]; then
+    echo -e "Output file: $R$pathOUT$N"
     echo -e "${R}Error$N: output file cannot be written."
     echo -e "${Y}Tip$N: ensure that output file isn't running."
-  elif [[ ! -f "${AIP_PATH[out]}" ]]; then
-    echo -e "Output file: $G${AIP_PATH[out]}$N"
-  else
-    echo -e "$Y!!$N Output file: $G${AIP_PATH[out]}$N"
+  elif [[ -f "$pathOUT" ]]; then
+    echo -e "$Y!!$N Output file: $G$pathOUT$N"
     echo -e "$Y!!$N Output file will be overwritten"
-  fi
-    #
-  echo "————————————————————————————————————————————————"
-  if [[ -z "${AIP_PATH[err]}" ]]; then
-    echo -e "${G}READY TO PATCH$N"
   else
-    echo -e "${Y}Cancelled$N\nAborted"
-    return 1
+    echo -e "Output file: $G$pathOUT$N"
   fi
-}
-
-wait_for_answer() {
-  local key
-  # loop to catch the first "y" or "n"
-  while [[ $key != "y" && $key != "n" ]]; do read -rsn1 key; done
-  # loop to consume/empty the input buffer
-  while IFS= read -rsn1 -t 0.01; do :; done
-  echo "$key"
   echo "————————————————————————————————————————————————"
-  [[ $key == "y" ]] && return 0 || return 1
-}
 
-unpack_appimage() {
+  # if_paths_are_bad_then_exit ------------------------------------------------
+  ((errBPR+errAIT+errTY+errTUY+errOUT+errASAR!=0)) && echoABORT && return 1
+
+  # start_patching_prompt -----------------------------------------------------
+  echo -en "${G}READY TO PATCH.$N Continue? (y/n) "
+  local key
+  while IFS= read -rsn1 key; do
+    case "$key" in
+      y|"") key="y"; break;; n|$'\e') key="n"; break;;
+    esac
+  done
+  if [[ "$key" == y ]];
+    then echo -e "\e[99D\e[0K${G}PROCEEDING TO PATCHING$N"
+    else echo "n"; echoCANCELLED; return 0
+  fi
+
+  # unpack_appimage -----------------------------------------------------------
   echo -n "Unpacking AppImg: "
-  chmod +x "${AIP_PATH[bpr]}" # prevents unpacking issues
-  if "${AIP_PATH[bpr]}" --appimage-extract \
-    >/var/tmp/appimagetool.log 2>&1;
-  then echoOK;
-  else echoKO;
-   printf "Log: \e[3;38;5;225m"
-   cat /var/tmp/appimagetool.log
-   echo -e "\e[0mAborted"
-   return 1
+  chmod +x "$pathBPR" # prevents unpacking issues
+  if "$pathBPR" --appimage-extract \
+        >/var/tmp/appimagetool.log 2>&1;
+    then echoOK;
+    else echoKO; pretty_cat /var/tmp/appimagetool.log; echoABORT; return 2
   fi
   chmod -R a+rX squashfs-root # prevents repacking issues
-}
 
-unpack_asar() {
+  # unpack_asar ---------------------------------------------------------------
   echo -n "Unpacking ASAR archive: "
   if asar extract squashfs-root/resources/app.asar asar-tmp \
-    >/var/tmp/asar.log 2>&1;
-  then echoOK;
-  else echoKO;
-   printf "Log: \e[3;38;5;225m"
-   cat /var/tmp/asar.log
-   echo -e "\e[0mAborted"
-   return 1
+        >/var/tmp/asar.log 2>&1;
+    then echoOK;
+    else echoKO; pretty_cat /var/tmp/asar.log; echoABORT; return 3
   fi
-}
 
-replace_files() {
+  # replace_files -------------------------------------------------------------
   shopt -q globstar; local had_globstar=$?
   shopt -q nullglob; local had_nullglob=$?
   shopt -s globstar nullglob
@@ -193,79 +203,46 @@ replace_files() {
   local error=0
   echo -n "Replacing icons: "
   for file in ./asar-tmp/**/"trayIcon"*.png; do
-    cp -f "${AIP_PATH[ty]}" "$file" || {
-      echo "$file not overwritten"; error=1; }
+    cp -f "$pathTY" "$file" || { echo "$file not overwritten"; error=1; }
   done
   for file in ./asar-tmp/**/"trayUnreadIcon"*.png; do
-    cp -f "${AIP_PATH[tuy]}" "$file" || {
-        echo "$file not overwritten"; error=1; }
+    cp -f "$pathTUY" "$file" || { echo "$file not overwritten"; error=1; }
   done
-  ((error==0)) && echoOK || echoKO
   #
   (( had_globstar )) && shopt -u globstar
   (( had_nullglob )) && shopt -u nullglob
-}
+  #
+  if ((error==0));
+    then echoOK
+    else echoKO; echoABORT; return 4
+  fi
 
-repack_asar() {
+  # repack_asar ---------------------------------------------------------------
   echo -n "Repacking ASAR archive: "
   if asar pack asar-tmp squashfs-root/resources/app.asar \
-     --unpack '**/{.**,**}/**/*.node' \
-     --unpack-dir '**/node_modules/{sharp,@img}' \
-     >/var/tmp/asar.log 2>&1;
-  then echoOK; rm -rf /var/tmp/asar-tmp;
-  else echoKO; rm -rf /var/tmp/asar-tmp;
-    printf "Log: \e[3;38;5;225m"
-    cat /var/tmp/asar.log
-    echo -e "\e[0mAborted"
-    return 1
+        --unpack '**/{.**,**}/**/*.node' \
+        --unpack-dir '**/node_modules/{sharp,@img}' \
+        >/var/tmp/asar.log 2>&1;
+    then echoOK; rm -rf asar-tmp;
+    else echoKO; rm -rf asar-tmp;
+      pretty_cat /var/tmp/asar.log; echoABORT; return 5
   fi
-}
 
-repack_appimage() {
+  # repack_appimage -----------------------------------------------------------
   echo -n "Repacking AppImage: "
-  if "${AIP_PATH[ait]}" squashfs-root Beeper-patched.AppImage \
-      >/var/tmp/appimagetool.log 2>&1;
-  then echoOK; rm -rf /var/tmp/squashfs-root;
-  else echoKO; rm -rf /var/tmp/squashfs-root;
-    printf "Log: \e[3;38;5;225m"
-    cat /var/tmp/appimagetool.log
-    echo -e "\e[0mAborted"
-    return 1
-  fi
-}
-
-unset_globals() { unset AIP_PATH; }
-
-# #############################################################################
-# MAIN ########################################################################
-
-main() {
-  print_title
-  if arg1_is_help "$1"; then
-    print_help
-    unset_globals; return 0
-  fi
-  fetch_paths_from_args "$@"
-  validate_paths
-  print_summary
-  if paths_are_bad; then
-    unset_globals; return 1
-  fi
-  echo -n "Continue? (y/n) "
-  if wait_for_answer; then
-    unpack_appimage || { unset_globals; return 2; }
-    unpack_asar     || { unset_globals; return 3; }
-    replace_files   || { unset_globals; return 4; }
-    repack_asar     || { unset_globals; return 5; }
-    repack_appimage || { unset_globals; return 6; }
+  if "$pathAIT" squashfs-root Beeper-patched.AppImage \
+        >/var/tmp/appimagetool.log 2>&1;
+    then echoOK; rm -rf squashfs-root;
+    else echoKO; rm -rf squashfs-root;
+      pretty_cat /var/tmp/appimagetool.log; echoABORT; return 6
   fi
 
+  # good_ending ---------------------------------------------------------------
   echo "————————————————————————————————————————————————"
-  echo "Finished"
-  unset_globals; return 0
+  echoFINISHED
+  return 0
 }
 
-# #############################################################################
-# BODY ########################################################################
-
-main "$@"
+# FINAL CALL TO THE FUNCTION THAT CONTAINS THE SCRIPT
+#
+beeper-trayicon-patcher "$@"
