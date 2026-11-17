@@ -2,22 +2,25 @@
 
 ![Demo gif](./bpr-patcher-demo.gif)
 
-### Dependencies
-- install `asar` [`[EXT SOURCE]`](https://github.com/electron/asar)
+## Prep
+- install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
 
-### Prep
-Put in a directory of your choice:
-- your `Beeper.AppImage` (or download it from [`[EXT SOURCE]`](https://beeper.com))
-- download [`beeper-trayicon-patcher.sh`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Fbeeper-trayicon-patcher.sh) (it's the script!) 
-- download [`trayIcon.png`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayIcon.png) (or provide your own)
-- download [`trayUnreadIcon.png`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayUnreadIcon.png) (or provide your own)
-- download `appimagetool.AppImage` [`[EXT SOURCE]`](https://github.com/AppImage/appimagetool/releases/tag/continuous)
+Then put in a directory of your choice:
+- `Beeper*.AppImage` from your PC or from [`[beeper.com]`](https://beeper.com)
+- `trayIcon.png` of your own or [download mine](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayIcon.png)
+- `trayUnreadIcon.png` of your own or [download mine](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayUnreadIcon.png)
+- `appimagetool.AppImage` from [`[github/appimagetool]`](https://github.com/AppImage/appimagetool/releases/tag/continuous)
+- `beeper-trayicon-patcher.sh`: [DOWNLOAD](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Fbeeper-trayicon-patcher.sh) and make it executable with one of these methods:
+  - `[GUI]`: use your file-manager to open the file-properties, find something like `[ ] Allow execution`, enable it
+  - `[CLI]`: `chmod +x "/path/to/beeper-trayicon-patcher.sh"`
 
-### Usage
-- `[GUI]` double-click on `patch.sh`, or drag-n-drop `Beeper.AppImage` onto `patch.sh`
-- `[CLI]` `source patch.sh` or `source patch.sh "path/to/Beeper.AppImage"`
+## Usage options
+- `[GUI]`: double-click `beeper-trayicon-patcher.sh` to use the files in the same directory
+- `[GUI]`: select the required files, drag-n-drop them onto `beeper-trayicon-patcher.sh`
+- `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
+- `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
 
-### Optional arguments (`CLI`)
+## Optional arguments (`CLI`)
 - `-h` or `--help` to print the help page (and return)
 - `--forced` or `-f` to skip confirmation prompt and patch directly
 - `--out=/file/path` or `-o=/file/path` to use a custom filename for the output
