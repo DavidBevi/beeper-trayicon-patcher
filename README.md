@@ -15,13 +15,13 @@ Then put in a directory of your choice:
   - `[CLI]`: `chmod +x "/path/to/beeper-trayicon-patcher.sh"`
 
 ## Usage options
-- `[GUI]`: double-click `beeper-trayicon-patcher.sh` to use the files in the same directory
-- `[GUI]`: select the required files, drag-n-drop them onto `beeper-trayicon-patcher.sh`
+- `[GUI]`: double-click `beeper-trayicon-patcher.sh` to patch with the files in that directory
+- `[GUI]`: select all the required files and drag-n-drop them onto `beeper-trayicon-patcher.sh`
 - `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
 - `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
 
 ## Optional arguments (`CLI`)
-- `-h` or `--help` to print the help page (and return)
+- `-h` or `--help` to print the help page (and exit)
 - `--forced` or `-f` to skip confirmation prompt and patch directly
 - `--out=/file/path` or `-o=/file/path` to use a custom filename for the output
 
