@@ -15,6 +15,11 @@ Put in a directory of your choice:
 - `[GUI]` double-click on `patch.sh`, or drag-n-drop `Beeper.AppImage` onto `patch.sh`
 - `[CLI]` `source patch.sh` or `source patch.sh "path/to/Beeper.AppImage"`
 
+### Optional arguments (`CLI`)
+- `-h` or `--help` to print the help page (and return)
+- `--forced` or `-f` to skip confirmation prompt and patch directly
+- `--out=/file/path` or `-o=/file/path` to use a custom filename for the output
+
 ----
 
 <img width="600" height="589" alt="beeper-trayicon-patcher-screenshot-v1" src="https://github.com/user-attachments/assets/d8ded5a3-9ad5-4b94-82b9-255e315bb309" />
