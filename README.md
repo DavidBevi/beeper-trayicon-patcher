@@ -1,5 +1,7 @@
 # beeper-trayicon-patcher<br><sub><sup>A script to customize the systray icons of Beeper AppImage (Linux)</sup></sub>
 
+![Demo gif](./bpr-patcher-demo.gif)
+
 ### Dependencies
 - install `asar` [`[EXT SOURCE]`](https://github.com/electron/asar)
 
