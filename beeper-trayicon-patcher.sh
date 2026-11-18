@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# BEEPER TRAYICON PATCHER v1.2 - by DavidBevi
+# BEEPER TRAYICON PATCHER v1.3 - by DavidBevi
 # - Brief: This script replaces the systray icons of Beeper AppImage (Linux)
 # - Download: https://github.com/DavidBevi/beeper-trayicon-patcher
 # - License: MIT (everything's allowed, no warranty)
@@ -132,7 +132,7 @@ USAGE
 
   # print_summary -------------------------------------------------------------
   # uses the results of validation to set colors
-  echo -e "Working directory: $G$PWD$N"
+  # echo -e "Working directory: $G$PWD$N"
   case "$ERR" in
     # beeper
     *bpr-ok*) echo -e "AppImage to patch: $G$pathBPR$N";;&
@@ -167,7 +167,12 @@ USAGE
     echo -en "${G}READY TO PATCH.$N Continue? (y/n) "
     local key
     while IFS= read -rsn1 key; do
-      case "$key" in    y|"") key="y"; break;;    n|$'\e') key="n"; break;;
+      case "$key" in
+        y|"") key="y"; break;;         # "y" or "enter" > continue
+        n) break;;                     # "n"" > return
+        $'\e') read -rst 0.1 key;      # "escape" is $`\e`, but special keys
+          if [[ $key == "" ]]; then    # start with it, if rest of input
+            key="n"; break; fi         # is empty > "escape" > return
       esac; done
     if [[ "$key" == y ]];
       then echo -e "\e[99D\e[0K${G}PROCEEDING TO PATCHING$N"
