@@ -30,18 +30,18 @@ beeper-trayicon-patcher() {
   echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
   # if_arg1_is_version_print_version_and_return --------------------------------
-  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.4"; return 0; fi
+  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.4.1"; return 0; fi
 
   # if_arg1_is_help_print_help_and_return -------------------------------------
   if [[ "$1" == -h || "$1" == --help ]]; then
    echo "This script replaces the systray icons of Beeper AppImage (Linux)
 
 REQUIREMENTS
-- asar installed            - https://github.com/electron/asar
-- appimagetool.AppImage     - https://github.com/AppImage/appimagetool
-- Beeper.AppImage           - https://beeper.com
-- a new trayIcon.png        - suggested size 32x32 px
-- a new trayUnreadIcon.png  - suggested size 32x32 px
+ - asar installed            - https://github.com/electron/asar
+ - appimagetool.AppImage     - https://github.com/AppImage/appimagetool
+ - Beeper.AppImage           - https://beeper.com
+ - a new trayIcon.png        - suggested size 32x32 px
+ - a new trayUnreadIcon.png  - suggested size 32x32 px
 
 The script looks for files with these names in its same directory.
 You can override this by passing the paths of other files as args.
@@ -49,10 +49,10 @@ The script checks filenames ignoring suffixes, like version and
   architecture, so names like 'Beeper-4.3-x86_64.AppImage' are ok.
 
 OTHER OPTIONS
- -h | --help        print this page (must be first arg)
- -h | --version     print version   (must be first arg)
- -f | --force       skip confirmation prompt
- -o=output/path     set custom output file
+ -h, --help        show help and exit
+ -v, --version     show version and exit
+ -f, --force       skip confirmation prompt
+ -o=output/path    set custom output file
 
 ALSO
 This script is designed to run with double-click, and also to run
