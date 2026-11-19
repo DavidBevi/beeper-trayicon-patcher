@@ -17,13 +17,15 @@ Then put in a directory of your choice:
 ## Usage options
 - `[GUI]`: double-click `beeper-trayicon-patcher.sh` to patch with the files in that directory
 - `[GUI]`: select all the required files and drag-n-drop them onto `beeper-trayicon-patcher.sh`
-- `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
-- `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [-h] [-f] [-o="/path/to/outputfile.AppImage"]`
+- `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
+- `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
 
 ## Optional arguments (`CLI`)
-- `-h` or `--help` to print the help page (and exit)
-- `--forced` or `-f` to skip confirmation prompt and patch directly
-- `--out=/file/path` or `-o=/file/path` to use a custom filename for the output
+- `-h` or `--help` to show help page and exit
+- `-v` or `--version` to show version and exit
+- `-f` or `--forced` to skip confirmation prompt and patch directly
+- `-o=/file/path` or `--out=/file/path` to use a custom filename for the output
+- `path/to/file` to pass custom file-paths for the required files (if they are in a different directory)
 
 ----
 
