@@ -1,39 +1,22 @@
 #!/usr/bin/env bash
-#
-# BEEPER TRAYICON PATCHER v1.3 - by DavidBevi
+# BEEPER TRAYICON PATCHER
 # - Brief: This script replaces the systray icons of Beeper AppImage (Linux)
 # - Download: https://github.com/DavidBevi/beeper-trayicon-patcher
 # - License: MIT (everything's allowed, no warranty)
-#
-# REQUIREMENTS
-# - Beeper.AppImage            - https://beeper.com
-# - appimagetool.AppImage      - https://github.com/AppImage/appimagetool
-# - asar installed             - https://github.com/electron/asar
-# - a new trayIcon.png         - suggested size 32x32 px
-# - a new trayUnreadIcon.png   - suggested size 32x32 px
-#
-# The script works when files are in its same directory, or you can pass other
-#   file-paths as arguments and the script will use them if they match names.
-# Tests are lenient, case-insensitive, and ignore suffix like version and
-#   architecture, so names like 'Beeper-4.3.308-x86_64.AppImage' are fine.
-#
-# USAGE
-# - you can launch it via cli as usual, by typing the path of this file.
-# - you can also double-click it in your file manager to launch a cli.
-# - you can also drag required files on this script in your file manager.
-#******************************************************************************
+# HELP and more INFO on line 39 ###############################################
 
 # ENSURE INTERACTIVITY
 # when script is double-clicked but a cli doesn't show up this fixes it
-# it tries to summon your default terminal emulator, a fallback is hardcoded
+# it tries to use your system's default terminal emulator, with fallbacks
 [[ -t 0 || -t 1 || -t 2 ]] || {
-  if xdg-terminal-exec "$0" "$@"; then return $?;
-  elif konsole --hold -e "$0" "$@"; then return $?;
+  if xdg-terminal-exec --hold -e "$0" "$@"; then return $?;
+  elif konsole         --hold -e "$0" "$@"; then return $?;
+  elif alacritty       --hold -e "$0" "$@"; then return $?;
   fi; }
 
 # ENSURE CORRECT WORKING DIR
-# when script is launched with drag-n-drop $PWD==$HOME
-# this is wrong, so we use the path of the script
+# when script is launched with drag-n-drop $PWD becomes $HOME
+# this is wrong, so we manually change it to the script's dir
 [[ "$PWD" == "$HOME" ]] && { cd "${0%/*}" || :; }
 
 ###############################################################################
@@ -41,34 +24,39 @@
 ###############################################################################
 
 # MAIN ——— but with a meaningful and unique name ———
-# clean sourcing, it's the only object of the script
+# sourcing is done cleanly, loading only this object
 beeper-trayicon-patcher() {
   # print_title ---------------------------------------------------------------
   echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
+  # if_arg1_is_version_print_version_and_return --------------------------------
+  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.4"; return 0; fi
+
   # if_arg1_is_help_print_help_and_return -------------------------------------
-  if [[ "$1" == "-h" || "$1" == "--help" ]]; then echo "
-HELP PAGE
-- Brief: This script replaces the systray icons of Beeper AppImage (Linux)
-- Download: https://github.com/DavidBevi/beeper-trayicon-patcher
-- License: MIT (everything's allowed, no warranty)
+  if [[ "$1" == -h || "$1" == --help ]]; then
+   echo "This script replaces the systray icons of Beeper AppImage (Linux)
 
 REQUIREMENTS
-- asar installed             - https://github.com/electron/asar
-- appimagetool.AppImage      - https://github.com/AppImage/appimagetool
-- Beeper.AppImage            - https://beeper.com
-- a new trayIcon.png         - suggested size 32x32 px
-- a new trayUnreadIcon.png   - suggested size 32x32 px
+- asar installed            - https://github.com/electron/asar
+- appimagetool.AppImage     - https://github.com/AppImage/appimagetool
+- Beeper.AppImage           - https://beeper.com
+- a new trayIcon.png        - suggested size 32x32 px
+- a new trayUnreadIcon.png  - suggested size 32x32 px
 
-The script works when files are in its same directory, or you can pass other
-  file-paths as arguments and the script will use them if they match names.
-Tests are lenient, case-insensitive, and ignore suffix like version and
-  architecture, so names like 'Beeper-4.3.308-x86_64.AppImage' are fine.
+The script looks for files with these names in its same directory.
+You can override this by passing the paths of other files as args.
+The script checks filenames ignoring suffixes, like version and
+  architecture, so names like 'Beeper-4.3-x86_64.AppImage' are ok.
 
-USAGE
-- you can launch it via cli as usual, by typing the path of this file.
-- you can also double-click it in your file manager to launch a cli.
-- you can also drag required files on this script in your file manager.
+OTHER OPTIONS
+ -h | --help        print this page (must be first arg)
+ -h | --version     print version   (must be first arg)
+ -f | --force       skip confirmation prompt
+ -o=output/path     set custom output file
+
+ALSO
+This script is designed to run with double-click, and also to run
+with custom files when these are drag-n-dropped onto it.
 "; return 0; fi
 
   # shared_variables ----------------------------------------------------------
@@ -100,24 +88,24 @@ USAGE
 
   # validate_paths ------------------------------------------------------------
   # beeper
-  for p in "$argBPR" ./*eeper*.*pp*mage; do
+  for p in "$argBPR" ./?eeper*.?pp?mage; do
     pathBPR="$p";
     "$p" --appimage-version >/dev/null 2>&1 && { unERR bpr; break; }
   done
   # appimagetool
-  for p in "$argAIT" ./*pp*mage*ool*.*pp*mage; do
+  for p in "$argAIT" ./?pp?mage?ool*.?pp?mage; do
     pathAIT="$p";
     "$p" --appimage-version >/dev/null 2>&1 && { unERR ait; break; }
   done
   # asar
   if asar --version >/dev/null 2>&1; then unERR asar; fi
   # trayIcon
-  for p in "$argTY" ./*ray?con.png; do
+  for p in "$argTY" ./?ray?con.png; do
     pathTY="$p";
     [[ -f "$p" ]] && { unERR ty; break; }
   done
   # trayUnreadIcon
-  for p in "$argTUY" ./*ray?nread?con.png; do
+  for p in "$argTUY" ./?ray?nread?con.png; do
     pathTUY="$p";
     [[ -f "$p" ]] && { unERR tuy; break; }
   done
@@ -164,7 +152,7 @@ USAGE
 
   # prompt_startpatching_yn ---------------------------------------------------
   if [[ "$OPT" != *forced* ]]; then
-    echo -en "${G}READY TO PATCH.$N Continue? (y/n) "
+    echo -en "${G}READY TO PATCH.$N Continue? (Y/n) "
     local key
     while IFS= read -rsn1 key; do
       case "$key" in
@@ -181,7 +169,7 @@ USAGE
   fi
 
   # unpack_appimage -----------------------------------------------------------
-  echo -n "Unpacking AppImg: "
+  echo -n "Unpacking AppImg:       "
   chmod +x "$pathBPR" # get permissions, avoid unpacking issues
   if "$pathBPR" --appimage-extract \
         >/var/tmp/appimagetool.log 2>&1 & spin;
@@ -204,7 +192,7 @@ USAGE
   shopt -s globstar nullglob
   #
   local error=0
-  echo -n "Replacing icons: "
+  echo -n "Replacing icons:        "
   for file in ./asar-tmp/**/"trayIcon"*.png; do
     cp -f "$pathTY" "$file" || { echo "$file not overwritten"; error=1; }
   done
@@ -232,7 +220,7 @@ USAGE
   fi
 
   # repack_appimage -----------------------------------------------------------
-  echo -n "Repacking AppImage: "
+  echo -n "Repacking AppImage:     "
   if "$pathAIT" squashfs-root Beeper-patched.AppImage \
         >/var/tmp/appimagetool.log 2>&1 & spin;
     then echoOK; rm -rf squashfs-root;
