@@ -30,7 +30,7 @@ beeper-trayicon-patcher() {
   echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
   # if_arg1_is_version_print_version_and_return --------------------------------
-  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.4.1"; return 0; fi
+  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.5"; return 0; fi
 
   # if_arg1_is_help_print_help_and_return -------------------------------------
   if [[ "$1" == -h || "$1" == --help ]]; then
@@ -56,7 +56,7 @@ OTHER OPTIONS
 
 ALSO
 This script is designed to run with double-click, and also to run
-with custom files when these are drag-n-dropped onto it.
+  with custom files when these are drag-n-dropped onto it.
 "; return 0; fi
 
   # shared_variables ----------------------------------------------------------
@@ -83,7 +83,8 @@ with custom files when these are drag-n-dropped onto it.
     [[ -x "$i" && "$i" == *pp*mage*ool*.*pp*mage ]] && argAIT="$i"
     [[ "$i" == *ray[^Uu]*(I|i)con.png ]]            && argTY=" $i"
     [[ "$i" == *ray?nread?con.png ]]                && argTUY="$i"
-    [[ "$i" == --out=* || "$i" == -o=* ]]           && argOUT="${i#*=}"
+    [[ "$i" == --out=* || "$i" == -o=* ]]           && argOUT="${i#*=}" \
+                                                    && OPT+=-out-specified
   done
 
   # validate_paths ------------------------------------------------------------
@@ -112,15 +113,17 @@ with custom files when these are drag-n-dropped onto it.
   # output
   for p in "$argOUT" "./Beeper-patched.AppImage"; do
     pathOUT="$p";
-    if [[ ! -f "$p" ]] && touch "$p" 2>/dev/null;
+    if [[ ! -f "$p" ]] && touch "$p" 2>/dev/null;   # didnt exist
       then unERR out; rm "$p"; break
-    elif [[ -f "$p" ]] && true 2>/dev/null >> "$p";
+    elif true 2>/dev/null >> "$p";                  # can overwrite
       then unERR out ow; break
+    elif [[ "$OPT" == *out-specified* ]];           # custom out unwritable
+      then break
     fi; done
 
   # print_summary -------------------------------------------------------------
   # uses the results of validation to set colors
-  # echo -e "Working directory: $G$PWD$N"
+  echo -e "Working directory: $PWD"
   case "$ERR" in
     # beeper
     *bpr-ok*) echo -e "AppImage to patch: $G$pathBPR$N";;&
@@ -148,7 +151,7 @@ with custom files when these are drag-n-dropped onto it.
   esac
 
   # if_error_abort ------------------------------------------------------------
-  [[ "$ERR" == *ko* ]] && echoABORT && return 1
+  [[ "$ERR" == *ko* ]] && echoABORT && && return 1
 
   # prompt_startpatching_yn ---------------------------------------------------
   if [[ "$OPT" != *forced* ]]; then
@@ -157,7 +160,7 @@ with custom files when these are drag-n-dropped onto it.
     while IFS= read -rsn1 key; do
       case "$key" in
         y|"") key="y"; break;;         # "y" or "enter" > continue
-        n) break;;                     # "n"" > return
+        n) break;;                     # "n" > return
         $'\e') read -rst 0.1 key;      # "escape" is $`\e`, but special keys
           if [[ $key == "" ]]; then    # start with it, if rest of input
             key="n"; break; fi         # is empty > "escape" > return
@@ -187,9 +190,9 @@ with custom files when these are drag-n-dropped onto it.
   fi
 
   # replace_files -------------------------------------------------------------
-  shopt -q globstar; local had_globstar=$?
-  shopt -q nullglob; local had_nullglob=$?
-  shopt -s globstar nullglob
+  shopt -q globstar; local had_globstar=$?  # get and save shell settings
+  shopt -q nullglob; local had_nullglob=$?  # ''
+  shopt -s globstar nullglob                # set needed shell settings
   #
   local error=0
   echo -n "Replacing icons:        "
@@ -200,8 +203,8 @@ with custom files when these are drag-n-dropped onto it.
     cp -f "$pathTUY" "$file" || { echo "$file not overwritten"; error=1; }
   done
   #
-  (( had_globstar )) && shopt -u globstar
-  (( had_nullglob )) && shopt -u nullglob
+  (( had_globstar )) && shopt -u globstar   # restore orig shell settings
+  (( had_nullglob )) && shopt -u nullglob   # ''
   #
   if ((error==0));
     then echoOK
