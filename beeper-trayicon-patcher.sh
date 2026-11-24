@@ -30,7 +30,7 @@ beeper-trayicon-patcher() {
   echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
   # if_arg1_is_version_print_version_and_return --------------------------------
-  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.5.1"; return 0; fi
+  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.6"; return 0; fi
 
   # if_arg1_is_help_print_help_and_return -------------------------------------
   if [[ "$1" == -h || "$1" == --help ]]; then
@@ -73,8 +73,46 @@ This script is designed to run with double-click, and also to run
   echoFINISHED() { echo -e "${G}FINISHED - EXIT$N\n"; }
   catERR() { printf "Log: \e[3;38;5;225m"; cat "$1" >&2; echo -e "\e[0m"; }
   unERR() { ERR="${ERR/$1-ko/$1-${2:-ok}}"; }
+  #
   spin() { local pid=$! i=0 sp='\|/-'; while kill -0 "$pid" 2>/dev/null; do
     printf "%c\b" "${sp:i++%4:1}"; sleep 0.1; done; wait "$pid"; return $?; }
+  #
+  read_yn() {
+    local key
+    while IFS= read -rsn1 key; do
+      case "$key" in
+        y|"") return 0;;  n) return 1;;
+        # "escape" is $`\e`, but special keys start with it,
+        # so check rest of input, empty=escape, else do nothing
+        $'\e') read -rst 0.1 key; [[ $key == "" ]] && return 1
+      esac
+    done
+  }
+
+  # installer_section ---------------------------------------------------------
+  if [[ "$1" == install ]]; then
+    # make_executable
+    echo -n "Executable? "
+    if chmod +x "${BASH_SOURCE[0]}"; then echoOK; else echoKO; fi
+    # download_required_files
+    for i in "trayIcon.png https://raw.githubusercontent.com/DavidBevi/beeper-trayicon-patcher/refs/heads/main/trayIcon.png" \
+      "trayUnreadIcon.png https://raw.githubusercontent.com/DavidBevi/beeper-trayicon-patcher/refs/heads/main/trayUnreadIcon.png" \
+      "appimagetool.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$(uname -m).AppImage" \
+      "beeper.AppImage https://api.beeper.com/desktop/download/linux/x64/stable/com.automattic.beeper.desktop"; do
+      local file="${i% *}" url="${i#* }"
+      if [[ -f "$file" ]]; then echo -e "$file: ${G}OK$N"; continue; fi
+      echo -en "$file: ${Y}not found, download it? (Y/n): $N"
+      if read_yn; then
+        echo -en "\e[99D\e[0J$file: ${Y}downloading...$N "
+        if curl -sSL "$url" > "$file" & spin;
+          then echoOK; chmod +x "$file";
+          else echoKO;
+        fi
+      else echo "n"; fi
+    done
+    echo
+    return 0
+  fi
 
   # arg_parsing ---------------------------------------------------------------
   for i in "$@"; do
@@ -156,16 +194,7 @@ This script is designed to run with double-click, and also to run
   # prompt_startpatching_yn ---------------------------------------------------
   if [[ "$OPT" != *forced* ]]; then
     echo -en "${G}READY TO PATCH.$N Continue? (Y/n) "
-    local key
-    while IFS= read -rsn1 key; do
-      case "$key" in
-        y|"") key="y"; break;;         # "y" or "enter" > continue
-        n) break;;                     # "n" > return
-        $'\e') read -rst 0.1 key;      # "escape" is $`\e`, but special keys
-          if [[ $key == "" ]]; then    # start with it, if rest of input
-            key="n"; break; fi         # is empty > "escape" > return
-      esac; done
-    if [[ "$key" == y ]];
+    if read_yn;
       then echo -e "\e[99D\e[0K${G}PROCEEDING TO PATCHING$N"
       else echo "n"; echoCANCELLED; return 0
     fi
