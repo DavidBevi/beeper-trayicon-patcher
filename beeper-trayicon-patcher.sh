@@ -30,7 +30,7 @@ beeper-trayicon-patcher() {
   echo -e "\e[1;7m BEEPER TRAYICON PATCHER \e[0m🭬"
 
   # if_arg1_is_version_print_version_and_return --------------------------------
-  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.5"; return 0; fi
+  if [[ "$1" == -v || "$1" == --ver* ]]; then echo "v1.5.1"; return 0; fi
 
   # if_arg1_is_help_print_help_and_return -------------------------------------
   if [[ "$1" == -h || "$1" == --help ]]; then
@@ -151,7 +151,7 @@ This script is designed to run with double-click, and also to run
   esac
 
   # if_error_abort ------------------------------------------------------------
-  [[ "$ERR" == *ko* ]] && echoABORT && && return 1
+  [[ "$ERR" == *ko* ]] && echoABORT && return 1
 
   # prompt_startpatching_yn ---------------------------------------------------
   if [[ "$OPT" != *forced* ]]; then
