@@ -2,10 +2,15 @@
 
 ![Demo gif](./bpr-patcher-demo.gif)
 
-## Prep
-- install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
+# Install
+**PREP**: install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
 
-Then put in a directory of your choice:
+🇦) **AUTO-INSTALL**: open a CLI in the working dir of your choice, then launch the guided installer with:
+- `curl -O https://raw.githubusercontent.com/DavidBevi/beeper-trayicon-patcher/refs/heads/main/beeper-trayicon-patcher.sh && source beeper-trayicon-patcher.sh install`
+
+— or —
+
+🇧) **MANUAL INSTALLATION**: put in a directory of your choice:
 - `Beeper*.AppImage` from your PC or from [`[beeper.com]`](https://beeper.com)
 - `trayIcon.png` of your own or [download mine](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayIcon.png)
 - `trayUnreadIcon.png` of your own or [download mine](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2FtrayUnreadIcon.png)
@@ -14,13 +19,14 @@ Then put in a directory of your choice:
   - `[GUI]`: use your file-manager to open the file-properties, find something like `[ ] Allow execution`, enable it
   - `[CLI]`: `chmod +x "/path/to/beeper-trayicon-patcher.sh"`
 
-## Usage options
+# Usage options
 - `[GUI]`: double-click `beeper-trayicon-patcher.sh` to patch with the files in that directory
 - `[GUI]`: select all the required files and drag-n-drop them onto `beeper-trayicon-patcher.sh`
 - `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
 - `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
 
-## Optional arguments (`CLI`)
+# Optional arguments (`CLI`)
+- `install` to launch the guided installer
 - `-h` or `--help` to show help page and exit
 - `-v` or `--version` to show version and exit
 - `-f` or `--forced` to skip confirmation prompt and patch directly
