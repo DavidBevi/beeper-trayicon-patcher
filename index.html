@@ -1,0 +1,4643 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppImage Inspector</title>
+  <meta name="description" content="Inspect the contents of any local AppImage or .asar archive directly in your browser." />
+  <meta property="og:title" content="AppImage Inspector" />
+  <meta property="og:description" content="Inspect the contents of any local AppImage or .asar archive directly in your browser." />
+  <meta property="og:type" content="website" />
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --surface: #11151d;
+      --surface-hover: #171c27;
+      --surface-active: #1c2230;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #f1f5f9;
+      --text-muted: #8b95a7;
+      --text-dim: #5d677a;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-ring: rgba(59, 130, 246, 0.45);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.08);
+      --danger-border: rgba(248, 113, 113, 0.25);
+      --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0.01em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input {
+      font-family: inherit;
+    }
+
+    /* Landing screen: strictly minimal */
+    .landing {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .landing-inner {
+      max-width: 540px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .title {
+      margin: 0 0 12px 0;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--text);
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      margin: 0 0 32px 0;
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 42ch;
+      text-wrap: balance;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 11px 24px;
+      background-color: var(--text);
+      color: var(--bg);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 150ms var(--ease), transform 150ms var(--ease), opacity 150ms var(--ease);
+    }
+
+    .upload-btn:hover {
+      background-color: #e2e8f0;
+    }
+
+    .upload-btn:active {
+      transform: scale(0.985);
+    }
+
+    .upload-btn:focus-visible,
+    .secondary-btn:focus-visible,
+    .seg-btn:focus-visible,
+    .search-input:focus-visible,
+    .tree-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .hint {
+      margin: 16px 0 0 0;
+      font-size: 0.875rem;
+      color: var(--text-dim);
+    }
+
+    /* Full-page drag-and-drop overlay */
+    .drop-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background-color: rgba(11, 13, 18, 0.88);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms var(--ease);
+    }
+
+    .drop-overlay.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drop-frame {
+      width: 100%;
+      height: 100%;
+      border: 1.5px dashed var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .drop-label {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Workspace view after file selection */
+    .workspace {
+      display: none;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 24px 32px;
+      min-height: 100vh;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .workspace.is-visible {
+      display: flex;
+    }
+
+    .landing.is-hidden {
+      display: none;
+    }
+
+    .ws-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .ws-title-group {
+      min-width: 0;
+      flex: 1 1 320px;
+    }
+
+    .ws-filename {
+      margin: 0 0 4px 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ws-meta {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ws-meta-sep {
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 16px;
+      background-color: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background-color 140ms var(--ease), border-color 140ms var(--ease);
+    }
+
+    .secondary-btn:hover {
+      background-color: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .ws-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1 1 280px;
+      max-width: 440px;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px 0 36px;
+      background-color: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      transition: border-color 140ms var(--ease), background-color 140ms var(--ease);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .search-input:hover {
+      border-color: var(--border-strong);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .match-count {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .segmented {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      min-height: 32px;
+      padding: 4px 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 140ms var(--ease), color 140ms var(--ease);
+    }
+
+    .seg-btn:hover {
+      color: var(--text);
+    }
+
+    .seg-btn.is-active {
+      background-color: var(--surface-active);
+      color: var(--text);
+    }
+
+    /* File table surface */
+    .table-shell {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+    }
+
+    .table-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px 104px;
+      align-items: center;
+      height: 38px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .col-right {
+      text-align: right;
+    }
+
+    .virtual-scroll {
+      position: relative;
+      height: calc(100vh - 236px);
+      min-height: 320px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .virtual-spacer {
+      position: relative;
+      width: 100%;
+    }
+
+    .virtual-rows {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px 104px;
+      align-items: center;
+      height: 36px;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 0.8125rem;
+      transition: background-color 100ms var(--ease);
+    }
+
+    .file-row:hover {
+      background-color: var(--surface-hover);
+    }
+
+    .file-row.is-dir {
+      cursor: pointer;
+    }
+
+    .cell-name {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 6px;
+    }
+
+    .tree-toggle {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      border-radius: 4px;
+    }
+
+    .tree-toggle:hover {
+      color: var(--text);
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .tree-spacer {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .row-icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      color: var(--text-dim);
+    }
+
+    .is-dir .row-icon {
+      color: #60a5fa;
+    }
+
+    .entry-label {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .is-dir .entry-label {
+      font-weight: 500;
+    }
+
+    .symlink-target {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
+    .cell-type {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .cell-size {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .state-panel {
+      display: none;
+      padding: 48px 24px;
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .state-panel.is-visible {
+      display: flex;
+    }
+
+    .state-title {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .state-desc {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      max-width: 52ch;
+    }
+
+    .error-box {
+      display: none;
+      padding: 16px 20px;
+      background-color: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .error-box.is-visible {
+      display: block;
+    }
+
+    /* Header actions & primary button */
+    .ws-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 16px;
+      background-color: var(--accent);
+      color: #ffffff;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background-color 140ms var(--ease), opacity 140ms var(--ease), transform 140ms var(--ease);
+    }
+
+    .primary-btn:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+    }
+
+    .primary-btn:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .primary-btn:focus-visible,
+    .row-action-btn:focus-visible,
+    .patcher-card-btn:focus-visible,
+    .patcher-link-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Tray Icon Patcher panel */
+    .patcher-panel {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .patcher-panel[hidden] {
+      display: none;
+    }
+
+    .patcher-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .patcher-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .patcher-title {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .patcher-subtitle {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .patcher-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .patcher-link-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 140ms var(--ease), border-color 140ms var(--ease), background-color 140ms var(--ease);
+    }
+
+    .patcher-link-btn:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+      background-color: var(--surface-hover);
+    }
+
+    .patcher-paths-box {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .patcher-paths-box[hidden] {
+      display: none;
+    }
+
+    .patcher-path-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .patcher-path-str {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .patcher-path-tag {
+      font-size: 0.6875rem;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .patcher-path-tag.is-patched {
+      color: #4ade80;
+    }
+
+    .patcher-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .patcher-card {
+      background-color: var(--bg);
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color 140ms var(--ease), background-color 140ms var(--ease);
+    }
+
+    .patcher-card.is-ready {
+      border-style: solid;
+      border-color: rgba(59, 130, 246, 0.45);
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .patcher-card.is-dragover {
+      border-color: var(--accent);
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .patcher-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .patcher-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      color: var(--text-dim);
+    }
+
+    .patcher-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .patcher-card-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .patcher-card-name {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .patcher-card-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .patcher-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .patcher-card-btn {
+      min-height: 32px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background-color: var(--surface);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 140ms var(--ease), border-color 140ms var(--ease);
+    }
+
+    .patcher-card-btn:hover {
+      background-color: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .patcher-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .patcher-progress[hidden] {
+      display: none;
+    }
+
+    .patcher-progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .patcher-progress-track {
+      width: 100%;
+      height: 6px;
+      background-color: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .patcher-progress-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--accent);
+      transition: width 120ms linear;
+    }
+
+    .patcher-status {
+      font-size: 0.8125rem;
+      color: #4ade80;
+    }
+
+    .patcher-status[hidden] {
+      display: none;
+    }
+
+    /* Extended file table with action column */
+    .table-head,
+    .file-row {
+      grid-template-columns: minmax(0, 1fr) 92px 88px 116px;
+    }
+
+    .cell-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .modified-tag {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: #4ade80;
+      white-space: nowrap;
+    }
+
+    .tray-match-tag {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: #60a5fa;
+      margin-left: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .row-action-btn {
+      padding: 2px 8px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background-color: transparent;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 120ms var(--ease), color 120ms var(--ease), border-color 120ms var(--ease), background-color 120ms var(--ease);
+    }
+
+    .file-row:hover .row-action-btn,
+    .file-row:focus-within .row-action-btn,
+    .row-action-btn.is-visible {
+      opacity: 1;
+    }
+
+    .row-action-btn:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+      background-color: var(--surface-active);
+    }
+
+    @media (max-width: 640px) {
+      .table-head,
+      .file-row {
+        grid-template-columns: minmax(0, 1fr) 76px 84px;
+      }
+
+      .col-type,
+      .cell-type {
+        display: none;
+      }
+
+      .row-action-btn {
+        opacity: 1;
+      }
+
+      .virtual-scroll {
+        height: calc(100vh - 280px);
+      }
+    }
+
+    .inspect-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .inspect-bar[hidden] {
+      display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <input type="file" id="fileInput" accept=".AppImage,.appimage,.asar,*" hidden />
+  <input type="file" id="trayIconInput" accept="image/png,.png" hidden />
+  <input type="file" id="trayUnreadIconInput" accept="image/png,.png" hidden />
+  <input type="file" id="genericReplaceInput" hidden />
+
+  <main id="landing" class="landing">
+    <div class="landing-inner">
+      <h1 class="title">AppImage Inspector</h1>
+      <p class="subtitle">Inspect the contents of any local AppImage or .asar archive directly in your browser.</p>
+      <button type="button" id="uploadBtn" class="upload-btn">Select File</button>
+      <p class="hint">or drag and drop an .AppImage or .asar file anywhere on this page</p>
+    </div>
+  </main>
+
+  <section id="workspace" class="workspace" aria-live="polite">
+    <header class="ws-header">
+      <div class="ws-title-group">
+        <h1 id="fileTitle" class="ws-filename"></h1>
+        <p id="fileMeta" class="ws-meta"></p>
+      </div>
+      <div class="ws-actions">
+        <button type="button" id="repackBtn" class="primary-btn" hidden>Repack &amp; Download</button>
+        <button type="button" id="reloadBtn" class="secondary-btn">Load another</button>
+      </div>
+    </header>
+
+    <div id="errorBox" class="error-box" role="alert"></div>
+
+    <section id="patcherPanel" class="patcher-panel" hidden aria-label="Tray Icon Patcher">
+      <div class="patcher-head">
+        <div class="patcher-title-wrap">
+          <h2 class="patcher-title">Tray Icon Patcher</h2>
+          <p id="patcherSummary" class="patcher-subtitle"></p>
+        </div>
+        <div class="patcher-head-actions">
+          <button type="button" id="toggleMatchedPathsBtn" class="patcher-link-btn" hidden>Show matched paths</button>
+        </div>
+      </div>
+
+      <div id="patcherPathsBox" class="patcher-paths-box" hidden></div>
+
+      <div id="patcherGrid" class="patcher-grid"></div>
+
+      <div id="patcherProgress" class="patcher-progress" hidden>
+        <div class="patcher-progress-row">
+          <span id="patcherProgressLabel">Preparing...</span>
+          <span id="patcherProgressPct">0%</span>
+        </div>
+        <div class="patcher-progress-track">
+          <div id="patcherProgressFill" class="patcher-progress-fill"></div>
+        </div>
+      </div>
+
+      <div id="patcherStatus" class="patcher-status" hidden></div>
+    </section>
+
+    <div id="inspectBar" class="inspect-bar" hidden>
+      <button type="button" id="inspectFilesBtn" class="secondary-btn" aria-expanded="false">Inspect files</button>
+    </div>
+
+    <div id="toolbar" class="ws-toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input type="search" id="searchInput" class="search-input" placeholder="Filter files by path..." aria-label="Filter files by path" />
+      </div>
+
+      <div class="toolbar-right">
+        <span id="matchCount" class="match-count"></span>
+        <div class="segmented" role="group" aria-label="View mode">
+          <button type="button" id="modeTreeBtn" class="seg-btn is-active">Tree</button>
+          <button type="button" id="modeListBtn" class="seg-btn">List</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tableShell" class="table-shell">
+      <div class="table-head">
+        <div id="colHeaderName">Name</div>
+        <div class="col-type">Type</div>
+        <div class="col-right">Size</div>
+        <div class="col-right">Action</div>
+      </div>
+
+      <div id="loadingPanel" class="state-panel">
+        <p class="state-title" id="loadingText">Reading archive structure...</p>
+      </div>
+
+      <div id="emptyPanel" class="state-panel">
+        <p class="state-title">No matching files</p>
+        <p class="state-desc" id="emptyDesc">No entries match the current filter.</p>
+      </div>
+
+      <div id="virtualScroll" class="virtual-scroll" tabindex="0" aria-label="Contained files">
+        <div id="virtualSpacer" class="virtual-spacer">
+          <div id="virtualRows" class="virtual-rows"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
+    <div class="drop-frame">
+      <p class="drop-label">Drop AppImage or .asar to inspect</p>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
+      const utf8Encoder = new TextEncoder();
+      const utf16beDecoder = new TextDecoder('utf-16be', { fatal: false });
+
+      // =========================================================================
+      // 1. Chunked Blob Reader (reads only needed slices of large AppImages)
+      // =========================================================================
+      class BlobReader {
+        constructor(file) {
+          this.file = file;
+          this.size = file.size;
+          this.chunkSize = 65536;
+          this.cache = new Map();
+          this.maxCachedChunks = 128;
+        }
+
+        async readChunk(chunkIndex) {
+          if (this.cache.has(chunkIndex)) {
+            const val = this.cache.get(chunkIndex);
+            this.cache.delete(chunkIndex);
+            this.cache.set(chunkIndex, val);
+            return val;
+          }
+          const start = chunkIndex * this.chunkSize;
+          const end = Math.min(this.size, start + this.chunkSize);
+          const buf = new Uint8Array(await this.file.slice(start, end).arrayBuffer());
+          if (this.cache.size >= this.maxCachedChunks) {
+            const oldestKey = this.cache.keys().next().value;
+            this.cache.delete(oldestKey);
+          }
+          this.cache.set(chunkIndex, buf);
+          return buf;
+        }
+
+        async read(offset, length) {
+          if (offset < 0 || length <= 0 || offset >= this.size) {
+            return new Uint8Array(0);
+          }
+          const actualLen = Math.min(length, this.size - offset);
+          if (actualLen > 512 * 1024) {
+            return new Uint8Array(await this.file.slice(offset, offset + actualLen).arrayBuffer());
+          }
+          const out = new Uint8Array(actualLen);
+          let written = 0;
+          let pos = offset;
+          while (written < actualLen) {
+            const chunkIdx = Math.floor(pos / this.chunkSize);
+            const chunkOffset = pos % this.chunkSize;
+            const chunk = await this.readChunk(chunkIdx);
+            if (!chunk.length || chunkOffset >= chunk.length) break;
+            const copyLen = Math.min(actualLen - written, chunk.length - chunkOffset);
+            out.set(chunk.subarray(chunkOffset, chunkOffset + copyLen), written);
+            written += copyLen;
+            pos += copyLen;
+          }
+          return written === actualLen ? out : out.subarray(0, written);
+        }
+      }
+
+      // =========================================================================
+      // 2. Decompressors (Gzip/Zlib, LZ4, XZ/LZMA2 + BCJ)
+      // =========================================================================
+      async function decompressZlib(bytes) {
+        if (typeof DecompressionStream === 'undefined') {
+          throw new Error('This browser does not support DecompressionStream for gzip/zlib decompression.');
+        }
+        const formats = (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b)
+          ? ['gzip', 'deflate']
+          : ['deflate', 'deflate-raw'];
+
+        let lastErr = null;
+        for (const fmt of formats) {
+          try {
+            const ds = new DecompressionStream(fmt);
+            const stream = new Blob([bytes]).stream().pipeThrough(ds);
+            const buf = await new Response(stream).arrayBuffer();
+            return new Uint8Array(buf);
+          } catch (err) {
+            lastErr = err;
+          }
+        }
+        throw lastErr || new Error('Failed to decompress zlib/gzip block.');
+      }
+
+      const canCompressDeflate = typeof CompressionStream !== 'undefined';
+
+      async function compressZlib(bytes) {
+        if (!canCompressDeflate || !bytes || bytes.length === 0) {
+          return null;
+        }
+        try {
+          const cs = new CompressionStream('deflate');
+          const stream = new Blob([bytes]).stream().pipeThrough(cs);
+          const buf = await new Response(stream).arrayBuffer();
+          return new Uint8Array(buf);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function bytesToHex(bytes) {
+        let out = '';
+        for (let i = 0; i < bytes.length; i++) {
+          out += bytes[i].toString(16).padStart(2, '0');
+        }
+        return out;
+      }
+
+      // Compact pure-JS SHA-256 fallback (for contexts without crypto.subtle)
+      const SHA256_K = new Uint32Array([
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ]);
+
+      function sha256Fallback(data) {
+        const len = data.length;
+        const bitLenHi = Math.floor((len * 8) / 4294967296);
+        const bitLenLo = (len * 8) >>> 0;
+        const padLen = ((len + 9 + 63) & ~63);
+        const msg = new Uint8Array(padLen);
+        msg.set(data, 0);
+        msg[len] = 0x80;
+        const dv = new DataView(msg.buffer);
+        dv.setUint32(padLen - 8, bitLenHi, false);
+        dv.setUint32(padLen - 4, bitLenLo, false);
+
+        const H = new Uint32Array([
+          0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+          0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+        ]);
+        const W = new Uint32Array(64);
+        const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+        for (let i = 0; i < padLen; i += 64) {
+          for (let t = 0; t < 16; t++) {
+            W[t] = dv.getUint32(i + t * 4, false);
+          }
+          for (let t = 16; t < 64; t++) {
+            const s0 = rotr(W[t - 15], 7) ^ rotr(W[t - 15], 18) ^ (W[t - 15] >>> 3);
+            const s1 = rotr(W[t - 2], 17) ^ rotr(W[t - 2], 19) ^ (W[t - 2] >>> 10);
+            W[t] = (W[t - 16] + s0 + W[t - 7] + s1) >>> 0;
+          }
+          let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+          for (let t = 0; t < 64; t++) {
+            const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+            const ch = (e & f) ^ ((~e) & g);
+            const temp1 = (h + S1 + ch + SHA256_K[t] + W[t]) >>> 0;
+            const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const temp2 = (S0 + maj) >>> 0;
+            h = g; g = f; f = e; e = (d + temp1) >>> 0;
+            d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+          }
+          H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0;
+          H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+          H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0;
+          H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+        }
+
+        const out = new Uint8Array(32);
+        const outDv = new DataView(out.buffer);
+        for (let i = 0; i < 8; i++) outDv.setUint32(i * 4, H[i], false);
+        return bytesToHex(out);
+      }
+
+      async function sha256Hex(bytes) {
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+          const digest = await crypto.subtle.digest('SHA-256', bytes);
+          return bytesToHex(new Uint8Array(digest));
+        }
+        return sha256Fallback(bytes);
+      }
+
+      async function computeAsarIntegrity(bytes) {
+        const BLOCK_SIZE = 4194304;
+        const hash = await sha256Hex(bytes);
+        const blocks = [];
+        if (bytes.length === 0) {
+          blocks.push(hash);
+        } else {
+          for (let off = 0; off < bytes.length; off += BLOCK_SIZE) {
+            const end = Math.min(bytes.length, off + BLOCK_SIZE);
+            blocks.push(await sha256Hex(bytes.subarray(off, end)));
+          }
+        }
+        return {
+          algorithm: 'SHA256',
+          hash,
+          blockSize: BLOCK_SIZE,
+          blocks
+        };
+      }
+
+      function decompressLz4Block(src, maxOutputSize = 16384) {
+        const out = new Uint8Array(maxOutputSize);
+        let ip = 0;
+        let op = 0;
+        while (ip < src.length) {
+          const token = src[ip++];
+          let litLen = token >>> 4;
+          if (litLen === 15) {
+            let s;
+            do {
+              if (ip >= src.length) throw new Error('Corrupt LZ4 literal length.');
+              s = src[ip++];
+              litLen += s;
+            } while (s === 255);
+          }
+          if (ip + litLen > src.length) throw new Error('Corrupt LZ4 literal data.');
+          if (op + litLen > out.length) throw new Error('LZ4 output exceeded block limit.');
+          out.set(src.subarray(ip, ip + litLen), op);
+          ip += litLen;
+          op += litLen;
+          if (ip >= src.length) break;
+
+          if (ip + 2 > src.length) throw new Error('Corrupt LZ4 match offset.');
+          const offset = src[ip] | (src[ip + 1] << 8);
+          ip += 2;
+          if (offset === 0 || offset > op) throw new Error('Invalid LZ4 match offset.');
+
+          let matchLen = (token & 0x0f) + 4;
+          if ((token & 0x0f) === 15) {
+            let s;
+            do {
+              if (ip >= src.length) throw new Error('Corrupt LZ4 match length.');
+              s = src[ip++];
+              matchLen += s;
+            } while (s === 255);
+          }
+          if (op + matchLen > out.length) throw new Error('LZ4 match exceeded block limit.');
+          for (let i = 0; i < matchLen; i++) {
+            out[op] = out[op - offset];
+            op++;
+          }
+        }
+        return out.subarray(0, op);
+      }
+
+      // --- Pure-JS XZ (Container + BCJ Filters + LZMA2) Decoder ---
+      class RangeDecoder {
+        constructor(buf, offset, end) {
+          this.buf = buf;
+          this.pos = offset;
+          this.end = end;
+          this.range = 0xFFFFFFFF;
+          this.code = 0;
+          if (this.pos + 5 > this.end) throw new Error('Truncated LZMA range stream.');
+          const b0 = this.buf[this.pos++];
+          if (b0 !== 0) throw new Error('Invalid LZMA stream header byte.');
+          this.code = (
+            ((this.buf[this.pos] << 24) |
+             (this.buf[this.pos + 1] << 16) |
+             (this.buf[this.pos + 2] << 8) |
+             this.buf[this.pos + 3]) >>> 0
+          );
+          this.pos += 4;
+        }
+
+        normalize() {
+          if (this.range < 0x01000000) {
+            this.range = (this.range << 8) >>> 0;
+            const nextByte = this.pos < this.end ? this.buf[this.pos++] : 0;
+            this.code = ((this.code << 8) | nextByte) >>> 0;
+          }
+        }
+
+        decodeBit(probs, idx) {
+          const prob = probs[idx];
+          const bound = ((this.range >>> 11) * prob) >>> 0;
+          let bit;
+          if (this.code < bound) {
+            this.range = bound;
+            probs[idx] = prob + ((2048 - prob) >>> 5);
+            bit = 0;
+          } else {
+            this.range = (this.range - bound) >>> 0;
+            this.code = (this.code - bound) >>> 0;
+            probs[idx] = prob - (prob >>> 5);
+            bit = 1;
+          }
+          this.normalize();
+          return bit;
+        }
+
+        decodeDirectBits(numBits) {
+          let res = 0;
+          for (let i = 0; i < numBits; i++) {
+            this.range = this.range >>> 1;
+            res <<= 1;
+            if (this.code >= this.range) {
+              this.code = (this.code - this.range) >>> 0;
+              res |= 1;
+            }
+            this.normalize();
+          }
+          return res;
+        }
+
+        bitTreeDecode(probs, offset, numBits) {
+          let m = 1;
+          for (let i = 0; i < numBits; i++) {
+            m = (m << 1) | this.decodeBit(probs, offset + m);
+          }
+          return m - (1 << numBits);
+        }
+
+        bitTreeReverseDecode(probs, offset, numBits) {
+          let m = 1;
+          let symbol = 0;
+          for (let i = 0; i < numBits; i++) {
+            const bit = this.decodeBit(probs, offset + m);
+            m = (m << 1) | bit;
+            symbol |= bit << i;
+          }
+          return symbol;
+        }
+      }
+
+      class LzmaLenDecoder {
+        constructor() {
+          this.choice = new Uint16Array(2);
+          this.low = new Uint16Array(16 * 8);
+          this.mid = new Uint16Array(16 * 8);
+          this.high = new Uint16Array(256);
+          this.reset();
+        }
+
+        reset() {
+          this.choice.fill(1024);
+          this.low.fill(1024);
+          this.mid.fill(1024);
+          this.high.fill(1024);
+        }
+
+        decode(rc, posState) {
+          if (rc.decodeBit(this.choice, 0) === 0) {
+            return rc.bitTreeDecode(this.low, posState << 3, 3);
+          }
+          if (rc.decodeBit(this.choice, 1) === 0) {
+            return 8 + rc.bitTreeDecode(this.mid, posState << 3, 3);
+          }
+          return 16 + rc.bitTreeDecode(this.high, 0, 8);
+        }
+      }
+
+      function decodeLzma2Stream(src, start, end, dictSize) {
+        const winSize = Math.max(4096, Math.min(dictSize || 65536, 16 * 1024 * 1024));
+        const windowBuf = new Uint8Array(winSize);
+        let winPos = 0;
+        let winFull = false;
+        const chunks = [];
+
+        let lc = 3, lp = 0, pb = 2;
+        let state = 0;
+        let rep0 = 0, rep1 = 0, rep2 = 0, rep3 = 0;
+        let needResetDic = true;
+        let needResetState = true;
+        let needProps = true;
+
+        const isMatch = new Uint16Array(12 * 16);
+        const isRep = new Uint16Array(12);
+        const isRepG0 = new Uint16Array(12);
+        const isRepG1 = new Uint16Array(12);
+        const isRepG2 = new Uint16Array(12);
+        const isRep0Long = new Uint16Array(12 * 16);
+        const posSlot = new Uint16Array(4 * 64);
+        const posDecoders = new Uint16Array(115);
+        const alignDecoder = new Uint16Array(16);
+        const lenDecoder = new LzmaLenDecoder();
+        const repLenDecoder = new LzmaLenDecoder();
+        let litProbs = new Uint16Array(0x300 << (lc + lp));
+
+        function resetState() {
+          state = 0;
+          rep0 = rep1 = rep2 = rep3 = 0;
+          isMatch.fill(1024);
+          isRep.fill(1024);
+          isRepG0.fill(1024);
+          isRepG1.fill(1024);
+          isRepG2.fill(1024);
+          isRep0Long.fill(1024);
+          posSlot.fill(1024);
+          posDecoders.fill(1024);
+          alignDecoder.fill(1024);
+          lenDecoder.reset();
+          repLenDecoder.reset();
+          litProbs.fill(1024);
+        }
+
+        function putByte(b, outArr, outIdx) {
+          outArr[outIdx] = b;
+          windowBuf[winPos++] = b;
+          if (winPos === winSize) {
+            winPos = 0;
+            winFull = true;
+          }
+        }
+
+        function getByte(dist) {
+          let idx = winPos - dist - 1;
+          if (idx < 0) idx += winSize;
+          return windowBuf[idx];
+        }
+
+        let pos = start;
+        let totalProduced = 0;
+
+        while (pos < end) {
+          const ctrl = src[pos++];
+          if (ctrl === 0x00) break;
+
+          if (ctrl === 0x01 || ctrl === 0x02) {
+            if (ctrl === 0x01) {
+              winPos = 0;
+              winFull = false;
+              needResetDic = false;
+            } else if (needResetDic) {
+              throw new Error('LZMA2 missing dictionary reset.');
+            }
+            if (pos + 2 > end) throw new Error('Truncated LZMA2 uncompressed chunk header.');
+            const uLen = ((src[pos] << 8) | src[pos + 1]) + 1;
+            pos += 2;
+            if (pos + uLen > end) throw new Error('Truncated LZMA2 uncompressed chunk data.');
+            const outChunk = src.slice(pos, pos + uLen);
+            pos += uLen;
+            for (let i = 0; i < uLen; i++) {
+              windowBuf[winPos++] = outChunk[i];
+              if (winPos === winSize) {
+                winPos = 0;
+                winFull = true;
+              }
+            }
+            chunks.push(outChunk);
+            totalProduced += uLen;
+            continue;
+          }
+
+          if ((ctrl & 0x80) === 0) {
+            throw new Error('Invalid LZMA2 control byte: 0x' + ctrl.toString(16));
+          }
+
+          if (pos + 4 > end) throw new Error('Truncated LZMA2 compressed chunk header.');
+          const uLen = (((ctrl & 0x1F) << 16) | (src[pos] << 8) | src[pos + 1]) + 1;
+          const cLen = ((src[pos + 2] << 8) | src[pos + 3]) + 1;
+          pos += 4;
+
+          const mode = (ctrl >> 5) & 0x03;
+          if (mode === 3) {
+            winPos = 0;
+            winFull = false;
+            needResetDic = false;
+            needResetState = true;
+            needProps = true;
+          } else {
+            if (needResetDic) throw new Error('LZMA2 stream missing initial dictionary reset.');
+            if (mode >= 1) needResetState = true;
+            if (mode >= 2) needProps = true;
+          }
+
+          if (mode >= 2) {
+            if (pos >= end) throw new Error('Truncated LZMA2 props byte.');
+            const p = src[pos++];
+            if (p >= 225) throw new Error('Invalid LZMA properties.');
+            pb = Math.floor(p / 45);
+            const rem = p % 45;
+            lp = Math.floor(rem / 9);
+            lc = rem % 9;
+            const neededLitLen = 0x300 << (lc + lp);
+            if (litProbs.length !== neededLitLen) {
+              litProbs = new Uint16Array(neededLitLen);
+            }
+            needProps = false;
+          } else if (needProps) {
+            throw new Error('LZMA2 stream missing properties.');
+          }
+
+          if (needResetState) {
+            resetState();
+            needResetState = false;
+          }
+
+          if (pos + cLen > end) throw new Error('Truncated LZMA2 compressed chunk payload.');
+          const rc = new RangeDecoder(src, pos, pos + cLen);
+          pos += cLen;
+
+          const outChunk = new Uint8Array(uLen);
+          let outIdx = 0;
+          const posMask = (1 << pb) - 1;
+          const lpMask = (1 << lp) - 1;
+
+          while (outIdx < uLen) {
+            const absPos = totalProduced + outIdx;
+            const posState = absPos & posMask;
+            if (rc.decodeBit(isMatch, (state << 4) + posState) === 0) {
+              const prevByte = (absPos === 0 && !winFull && winPos === 0) ? 0 : getByte(0);
+              const litCtxIdx = ((absPos & lpMask) << lc) + (prevByte >>> (8 - lc));
+              const probBase = litCtxIdx * 0x300;
+              let symbol = 1;
+              if (state >= 7) {
+                let matchByte = getByte(rep0);
+                do {
+                  const matchBit = (matchByte >>> 7) & 1;
+                  matchByte = (matchByte << 1) & 0xFF;
+                  const bit = rc.decodeBit(litProbs, probBase + (((1 + matchBit) << 8) + symbol));
+                  symbol = (symbol << 1) | bit;
+                  if (matchBit !== bit) break;
+                } while (symbol < 0x100);
+              }
+              while (symbol < 0x100) {
+                symbol = (symbol << 1) | rc.decodeBit(litProbs, probBase + symbol);
+              }
+              putByte(symbol & 0xFF, outChunk, outIdx++);
+              state = state < 4 ? 0 : state < 10 ? state - 3 : state - 6;
+            } else {
+              let len;
+              if (rc.decodeBit(isRep, state) === 1) {
+                if (rc.decodeBit(isRepG0, state) === 0) {
+                  if (rc.decodeBit(isRep0Long, (state << 4) + posState) === 0) {
+                    state = state < 7 ? 9 : 11;
+                    putByte(getByte(rep0), outChunk, outIdx++);
+                    continue;
+                  }
+                } else {
+                  let dist;
+                  if (rc.decodeBit(isRepG1, state) === 0) {
+                    dist = rep1;
+                  } else {
+                    if (rc.decodeBit(isRepG2, state) === 0) {
+                      dist = rep2;
+                    } else {
+                      dist = rep3;
+                      rep3 = rep2;
+                    }
+                    rep2 = rep1;
+                  }
+                  rep1 = rep0;
+                  rep0 = dist;
+                }
+                len = 2 + repLenDecoder.decode(rc, posState);
+                state = state < 7 ? 8 : 11;
+              } else {
+                rep3 = rep2;
+                rep2 = rep1;
+                rep1 = rep0;
+                len = 2 + lenDecoder.decode(rc, posState);
+                state = state < 7 ? 7 : 10;
+                const lenToPosState = len - 2 < 4 ? len - 2 : 3;
+                const slot = rc.bitTreeDecode(posSlot, lenToPosState << 6, 6);
+                if (slot >= 4) {
+                  const numDirectBits = (slot >> 1) - 1;
+                  rep0 = (2 | (slot & 1)) << numDirectBits;
+                  if (slot < 14) {
+                    rep0 += rc.bitTreeReverseDecode(posDecoders, rep0 - slot, numDirectBits);
+                  } else {
+                    rep0 += rc.decodeDirectBits(numDirectBits - 4) << 4;
+                    rep0 += rc.bitTreeReverseDecode(alignDecoder, 0, 4);
+                  }
+                } else {
+                  rep0 = slot;
+                }
+              }
+
+              const copyLen = Math.min(len, uLen - outIdx);
+              for (let i = 0; i < copyLen; i++) {
+                putByte(getByte(rep0), outChunk, outIdx++);
+              }
+            }
+          }
+
+          chunks.push(outChunk);
+          totalProduced += uLen;
+        }
+
+        const result = new Uint8Array(totalProduced);
+        let offset = 0;
+        for (const c of chunks) {
+          result.set(c, offset);
+          offset += c.length;
+        }
+        return result;
+      }
+
+      // BCJ inverse filters for XZ
+      function bcjX86Decode(buf, startOffset = 0) {
+        const maskToAllowed = [true, true, true, false, true, false, false, false];
+        const maskToBitNum = [0, 1, 2, 2, 3, 3, 3, 3];
+        let prevMask = 0;
+        let prevPos = -5;
+        let i = 0;
+        while (i + 5 <= buf.length) {
+          const b = buf[i];
+          if (b !== 0xE8 && b !== 0xE9) {
+            i++;
+            continue;
+          }
+          const offset = i - prevPos;
+          if (offset > 5) {
+            prevMask = 0;
+          } else {
+            for (let j = 0; j < offset; j++) {
+              prevMask = (prevMask & 0x77) << 1;
+            }
+          }
+          prevPos = i;
+          const msb = buf[i + 4];
+          if ((msb === 0x00 || msb === 0xFF) && maskToAllowed[(prevMask >> 1) & 7] && (prevMask >>> 1) < 0x10) {
+            let src = ((msb << 24) | (buf[i + 3] << 16) | (buf[i + 2] << 8) | buf[i + 1]) >>> 0;
+            let dest;
+            while (true) {
+              dest = (src - (startOffset + i + 5)) >>> 0;
+              if (prevMask === 0) break;
+              const idx = maskToBitNum[prevMask >>> 1];
+              const testByte = (dest >>> (24 - idx * 8)) & 0xFF;
+              if (testByte !== 0x00 && testByte !== 0xFF) break;
+              src = (dest ^ ((1 << (32 - idx * 8)) - 1)) >>> 0;
+            }
+            buf[i + 1] = dest & 0xFF;
+            buf[i + 2] = (dest >>> 8) & 0xFF;
+            buf[i + 3] = (dest >>> 16) & 0xFF;
+            buf[i + 4] = (~(((dest >>> 24) & 1) - 1)) & 0xFF;
+            i += 5;
+            prevMask = 0;
+          } else {
+            i++;
+            prevMask |= 1;
+            if (msb === 0x00 || msb === 0xFF) prevMask |= 0x10;
+          }
+        }
+        return buf;
+      }
+
+      function bcjArmDecode(buf, startOffset = 0) {
+        for (let i = 0; i + 4 <= buf.length; i += 4) {
+          if (buf[i + 3] === 0xEB) {
+            let src = ((buf[i + 2] << 16) | (buf[i + 1] << 8) | buf[i]) << 2;
+            let dest = (src - (startOffset + i + 8)) >>> 2;
+            buf[i] = dest & 0xFF;
+            buf[i + 1] = (dest >>> 8) & 0xFF;
+            buf[i + 2] = (dest >>> 16) & 0xFF;
+          }
+        }
+        return buf;
+      }
+
+      function bcjArm64Decode(buf, startOffset = 0) {
+        for (let i = 0; i + 4 <= buf.length; i += 4) {
+          const instr = (buf[i] | (buf[i + 1] << 8) | (buf[i + 2] << 16) | (buf[i + 3] << 24)) >>> 0;
+          const pc = (startOffset + i) >>> 0;
+          if ((instr >>> 26) === 0x25) {
+            const src = instr & 0x03FFFFFF;
+            const dest = (src - (pc >>> 2)) & 0x03FFFFFF;
+            const out = (0x94000000 | dest) >>> 0;
+            buf[i] = out & 0xFF;
+            buf[i + 1] = (out >>> 8) & 0xFF;
+            buf[i + 2] = (out >>> 16) & 0xFF;
+            buf[i + 3] = (out >>> 24) & 0xFF;
+          } else if ((instr & 0x9F000000) === 0x90000000) {
+            const addr = (((instr >>> 29) & 3) | ((instr >>> 3) & 0x1FFFFC)) >> 0;
+            if ((addr + 0x00020000) & 0x000FFFFF) continue;
+            const res = (addr - (pc >>> 12)) & 0x1FFFFF;
+            const out = ((instr & 0x9F00001F) | ((res & 3) << 29) | ((res & 0x1FFFFC) << 3)) >>> 0;
+            buf[i] = out & 0xFF;
+            buf[i + 1] = (out >>> 8) & 0xFF;
+            buf[i + 2] = (out >>> 16) & 0xFF;
+            buf[i + 3] = (out >>> 24) & 0xFF;
+          }
+        }
+        return buf;
+      }
+
+      function readXzVarint(buf, stateObj) {
+        let num = 0;
+        let shift = 0;
+        for (let i = 0; i < 9; i++) {
+          if (stateObj.pos >= buf.length) throw new Error('Truncated XZ varint.');
+          const b = buf[stateObj.pos++];
+          num += (b & 0x7F) * Math.pow(2, shift);
+          if ((b & 0x80) === 0) return num;
+          shift += 7;
+        }
+        throw new Error('XZ varint overflow.');
+      }
+
+      function decompressXz(buf) {
+        if (buf.length < 24 ||
+            buf[0] !== 0xFD || buf[1] !== 0x37 || buf[2] !== 0x7A ||
+            buf[3] !== 0x58 || buf[4] !== 0x5A || buf[5] !== 0x00) {
+          throw new Error('Invalid XZ stream header.');
+        }
+
+        const checkType = buf[7] & 0x0F;
+        const checkSizes = [0, 4, 4, 4, 8, 8, 8, 16, 16, 16, 32, 32, 32, 64, 64, 64];
+        const checkSize = checkSizes[checkType] || 0;
+
+        let pos = 12;
+        const blockOutputs = [];
+        let totalLen = 0;
+
+        while (pos < buf.length) {
+          const headerSizeByte = buf[pos];
+          if (headerSizeByte === 0x00) {
+            break; // Index reached
+          }
+          const headerSize = (headerSizeByte + 1) * 4;
+          if (pos + headerSize > buf.length) throw new Error('Truncated XZ block header.');
+
+          const hState = { pos: pos + 1 };
+          const flags = buf[hState.pos++];
+          const hasCompSize = (flags & 0x40) !== 0;
+          const hasUncompSize = (flags & 0x80) !== 0;
+          const numFilters = (flags & 0x03) + 1;
+
+          const compSize = hasCompSize ? readXzVarint(buf, hState) : null;
+          if (hasUncompSize) readXzVarint(buf, hState);
+
+          const filters = [];
+          for (let f = 0; f < numFilters; f++) {
+            const id = readXzVarint(buf, hState);
+            const propSize = readXzVarint(buf, hState);
+            const props = buf.subarray(hState.pos, hState.pos + propSize);
+            hState.pos += propSize;
+            filters.push({ id, props });
+          }
+
+          pos += headerSize;
+          const lzmaFilter = filters[filters.length - 1];
+          if (!lzmaFilter || lzmaFilter.id !== 0x21 || lzmaFilter.props.length !== 1) {
+            throw new Error('Unsupported XZ filter chain.');
+          }
+          const d = lzmaFilter.props[0] & 0x3F;
+          const dictSize = d >= 40 ? 0xFFFFFFFF : ((2 | (d & 1)) << ((d >> 1) + 11));
+
+          const payloadEnd = compSize !== null ? pos + compSize : buf.length - 12 - checkSize;
+          let decoded = decodeLzma2Stream(buf, pos, payloadEnd, dictSize);
+
+          // Apply remaining filters in reverse order (excluding LZMA2 at the end)
+          for (let f = filters.length - 2; f >= 0; f--) {
+            const flt = filters[f];
+            let startOffset = 0;
+            if (flt.props.length === 4) {
+              startOffset = (flt.props[0] | (flt.props[1] << 8) | (flt.props[2] << 16) | (flt.props[3] << 24)) >>> 0;
+            }
+            if (flt.id === 0x04) bcjX86Decode(decoded, startOffset);
+            else if (flt.id === 0x07) bcjArmDecode(decoded, startOffset);
+            else if (flt.id === 0x0A) bcjArm64Decode(decoded, startOffset);
+            else if (flt.id === 0x03) {
+              const dist = (flt.props[0] || 0) + 1;
+              for (let i = dist; i < decoded.length; i++) {
+                decoded[i] = (decoded[i] + decoded[i - dist]) & 0xFF;
+              }
+            }
+          }
+
+          blockOutputs.push(decoded);
+          totalLen += decoded.length;
+
+          if (compSize !== null) {
+            pos += compSize;
+            const pad = (4 - (compSize % 4)) % 4;
+            pos += pad + checkSize;
+          } else {
+            break;
+          }
+        }
+
+        if (blockOutputs.length === 1) return blockOutputs[0];
+        const out = new Uint8Array(totalLen);
+        let off = 0;
+        for (const b of blockOutputs) {
+          out.set(b, off);
+          off += b.length;
+        }
+        return out;
+      }
+
+      // =========================================================================
+      // 3. ELF & AppImage Container Detection
+      // =========================================================================
+      function getElfEndOffset(headerBytes) {
+        if (headerBytes.length < 64) return 0;
+        if (headerBytes[0] !== 0x7F || headerBytes[1] !== 0x45 ||
+            headerBytes[2] !== 0x4C || headerBytes[3] !== 0x46) {
+          return 0;
+        }
+        const eiClass = headerBytes[4]; // 1 = 32-bit, 2 = 64-bit
+        const le = headerBytes[5] === 1;
+        const dv = new DataView(headerBytes.buffer, headerBytes.byteOffset, headerBytes.byteLength);
+
+        let e_shoff = 0, e_shentsize = 0, e_shnum = 0;
+        if (eiClass === 2) {
+          const lo = dv.getUint32(40, le);
+          const hi = dv.getUint32(44, le);
+          e_shoff = le ? (lo + hi * 4294967296) : (hi + lo * 4294967296);
+          e_shentsize = dv.getUint16(58, le);
+          e_shnum = dv.getUint16(60, le);
+        } else if (eiClass === 1) {
+          e_shoff = dv.getUint32(32, le);
+          e_shentsize = dv.getUint16(46, le);
+          e_shnum = dv.getUint16(48, le);
+        }
+        if (e_shoff > 0 && e_shentsize > 0 && e_shnum > 0) {
+          return e_shoff + e_shentsize * e_shnum;
+        }
+        return 0;
+      }
+
+      function isValidSquashfsSuperblock(bytes, offset, remainingSize) {
+        if (offset + 96 > bytes.length) return false;
+        const dv = new DataView(bytes.buffer, bytes.byteOffset + offset, 96);
+        const magic = dv.getUint32(0, true);
+        if (magic !== 0x73717368) return false; // 'hsqs'
+        const inodes = dv.getUint32(4, true);
+        const blockSize = dv.getUint32(12, true);
+        const compression = dv.getUint16(20, true);
+        const sMajor = dv.getUint16(28, true);
+        const sMinor = dv.getUint16(30, true);
+        const bytesUsed = Number(dv.getBigUint64(40, true));
+        if (sMajor !== 4 || sMinor !== 0) return false;
+        if (inodes === 0) return false;
+        if (blockSize < 4096 || blockSize > 1048576 || (blockSize & (blockSize - 1)) !== 0) return false;
+        if (compression < 1 || compression > 6) return false;
+        if (bytesUsed <= 0 || bytesUsed > remainingSize + 8192) return false;
+        return true;
+      }
+
+      // =========================================================================
+      // 3B. Electron ASAR Archive Parser
+      // =========================================================================
+      function parseAsarHeaderPrefix(bytes, totalSize) {
+        if (!bytes || bytes.length < 16) return null;
+        const dv = new DataView(bytes.buffer, bytes.byteOffset, 16);
+        const sizeFieldLen = dv.getUint32(0, true);
+        if (sizeFieldLen !== 4) return null;
+        const headerPickleTotalSize = dv.getUint32(4, true);
+        if (headerPickleTotalSize < 8 || headerPickleTotalSize > 64 * 1024 * 1024) return null;
+        if (8 + headerPickleTotalSize > totalSize) return null;
+        const headerPayloadSize = dv.getUint32(8, true);
+        if (headerPayloadSize < 4 || headerPayloadSize > headerPickleTotalSize) return null;
+        const jsonLen = dv.getUint32(12, true);
+        if (jsonLen === 0 || jsonLen > headerPickleTotalSize - 8 || 16 + jsonLen > totalSize) return null;
+        return { headerPickleTotalSize, jsonLen };
+      }
+
+      async function parseAsarEntries(readSlice, totalSize, rootPath, rootDepth, asarArchivePath = '') {
+        const hdr = await readSlice(0, 16);
+        const prefix = parseAsarHeaderPrefix(hdr, totalSize);
+        if (!prefix) {
+          throw new Error('Invalid ASAR header.');
+        }
+
+        const jsonBytes = await readSlice(16, prefix.jsonLen);
+        if (jsonBytes.length < prefix.jsonLen) {
+          throw new Error('Truncated ASAR header.');
+        }
+
+        const manifest = JSON.parse(utf8Decoder.decode(jsonBytes));
+        if (!manifest || typeof manifest !== 'object' || !manifest.files || typeof manifest.files !== 'object') {
+          throw new Error('Invalid ASAR manifest structure.');
+        }
+
+        const headerTotalSize = 8 + prefix.headerPickleTotalSize;
+        let hasIntegrity = false;
+        const entries = [];
+
+        function walkAsar(filesObj, parentPath, relParentPath, depth) {
+          for (const key of Object.keys(filesObj)) {
+            const node = filesObj[key];
+            if (!key || !node || typeof node !== 'object') continue;
+            const fullPath = parentPath ? parentPath + '/' + key : key;
+            const relPath = relParentPath ? relParentPath + '/' + key : key;
+
+            if (node.files && typeof node.files === 'object') {
+              entries.push({
+                name: key,
+                path: fullPath,
+                parentPath,
+                type: 'dir',
+                size: 0,
+                target: '',
+                depth,
+                inAsar: true,
+                asarPath: asarArchivePath,
+                asarRelPath: relPath
+              });
+              walkAsar(node.files, fullPath, relPath, depth + 1);
+            } else if (typeof node.link === 'string') {
+              entries.push({
+                name: key,
+                path: fullPath,
+                parentPath,
+                type: 'symlink',
+                size: 0,
+                target: node.link,
+                depth,
+                inAsar: true,
+                asarPath: asarArchivePath,
+                asarRelPath: relPath
+              });
+            } else {
+              if (node.integrity && typeof node.integrity === 'object') {
+                hasIntegrity = true;
+              }
+              entries.push({
+                name: key,
+                path: fullPath,
+                parentPath,
+                type: 'file',
+                size: typeof node.size === 'number' ? node.size : 0,
+                target: '',
+                depth,
+                inAsar: true,
+                unpacked: Boolean(node.unpacked),
+                asarPath: asarArchivePath,
+                asarRelPath: relPath
+              });
+            }
+          }
+        }
+
+        walkAsar(manifest.files, rootPath, '', rootDepth);
+        return {
+          formatLabel: 'Electron ASAR',
+          entries,
+          manifest,
+          headerTotalSize,
+          hasIntegrity
+        };
+      }
+
+      // Mirrors: asar pack ... --unpack '**/{.**,**}/**/*.node' --unpack-dir '**/node_modules/{sharp,@img}'
+      function isUnpackNodePattern(relPath) {
+        return relPath.endsWith('.node');
+      }
+
+      function isUnpackDirSharpPattern(relPath) {
+        return /(^|\/)node_modules\/(sharp|@img)$/.test(relPath);
+      }
+
+      function encodeAsarPickleHeader(manifestObj) {
+        const jsonBytes = utf8Encoder.encode(JSON.stringify(manifestObj));
+        const jsonLen = jsonBytes.length;
+        const alignedJsonLen = (jsonLen + 3) & ~3;
+        const headerPayloadSize = 4 + alignedJsonLen;
+        const headerPickleTotalSize = 4 + headerPayloadSize;
+        const totalHeaderBytes = 8 + headerPickleTotalSize;
+
+        const headerBuf = new Uint8Array(totalHeaderBytes);
+        const dv = new DataView(headerBuf.buffer);
+        dv.setUint32(0, 4, true);
+        dv.setUint32(4, headerPickleTotalSize, true);
+        dv.setUint32(8, headerPayloadSize, true);
+        dv.setUint32(12, jsonLen, true);
+        headerBuf.set(jsonBytes, 16);
+        return headerBuf;
+      }
+
+      async function readAllFromSliceReader(readSlice, offset, length) {
+        if (length <= 0) return new Uint8Array(0);
+        const out = new Uint8Array(length);
+        const chunkLen = 1024 * 1024;
+        let pos = 0;
+        while (pos < length) {
+          const take = Math.min(chunkLen, length - pos);
+          const part = await readSlice(offset + pos, take);
+          if (!part.length) break;
+          out.set(part, pos);
+          pos += part.length;
+        }
+        return pos === length ? out : out.subarray(0, pos);
+      }
+
+      async function repackAsar({
+        readOrigSlice,
+        origManifest,
+        origHeaderTotalSize,
+        hasIntegrity,
+        replacementsMap,
+        onProgress,
+        shouldAbort
+      }) {
+        let currentPackedOffset = 0;
+        const packedChunks = [];
+        const unpackedFilesToWrite = [];
+        let processedCount = 0;
+
+        async function walkBuild(filesObj, parentRel, inUnpackedDir) {
+          if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
+          const outFiles = {};
+          const keys = Object.keys(filesObj);
+          for (const key of keys) {
+            const node = filesObj[key];
+            if (!key || !node || typeof node !== 'object') continue;
+            const relPath = parentRel ? parentRel + '/' + key : key;
+
+            if (node.files && typeof node.files === 'object') {
+              const dirMatched = inUnpackedDir || isUnpackDirSharpPattern(relPath);
+              const childrenOut = await walkBuild(node.files, relPath, dirMatched);
+              const outDir = { files: childrenOut };
+              if (node.unpacked || dirMatched) {
+                outDir.unpacked = true;
+              }
+              outFiles[key] = outDir;
+            } else if (typeof node.link === 'string') {
+              const outLink = { link: node.link };
+              if (node.unpacked || inUnpackedDir) {
+                outLink.unpacked = true;
+              }
+              outFiles[key] = outLink;
+            } else {
+              const wasUnpacked = Boolean(node.unpacked);
+              const shouldUnpack = wasUnpacked || inUnpackedDir || isUnpackNodePattern(relPath);
+              const replacedBytes = replacementsMap.has(relPath) ? replacementsMap.get(relPath) : null;
+              const fileSize = replacedBytes !== null
+                ? replacedBytes.length
+                : (typeof node.size === 'number' ? node.size : 0);
+
+              const outFile = { size: fileSize };
+              if (node.executable) {
+                outFile.executable = true;
+              }
+
+              if (replacedBytes !== null) {
+                if (hasIntegrity) {
+                  outFile.integrity = await computeAsarIntegrity(replacedBytes);
+                }
+              } else if (node.integrity) {
+                outFile.integrity = node.integrity;
+              }
+
+              if (shouldUnpack) {
+                outFile.unpacked = true;
+                if (replacedBytes !== null) {
+                  unpackedFilesToWrite.push({
+                    relPath,
+                    bytes: replacedBytes,
+                    executable: Boolean(node.executable)
+                  });
+                } else if (!wasUnpacked) {
+                  const origOffset = origHeaderTotalSize + Number(node.offset || 0);
+                  const origBytes = fileSize > 0
+                    ? await readAllFromSliceReader(readOrigSlice, origOffset, fileSize)
+                    : new Uint8Array(0);
+                  if (hasIntegrity && !outFile.integrity) {
+                    outFile.integrity = await computeAsarIntegrity(origBytes);
+                  }
+                  unpackedFilesToWrite.push({
+                    relPath,
+                    bytes: origBytes,
+                    executable: Boolean(node.executable)
+                  });
+                }
+              } else {
+                outFile.offset = String(currentPackedOffset);
+                currentPackedOffset += fileSize;
+                if (fileSize > 0) {
+                  if (replacedBytes !== null) {
+                    packedChunks.push({ kind: 'mem', bytes: replacedBytes });
+                  } else {
+                    packedChunks.push({
+                      kind: 'orig',
+                      offset: origHeaderTotalSize + Number(node.offset || 0),
+                      size: fileSize
+                    });
+                  }
+                }
+              }
+
+              outFiles[key] = outFile;
+              processedCount++;
+              if (processedCount % 250 === 0) {
+                if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
+                if (onProgress) onProgress(processedCount);
+                await new Promise((r) => setTimeout(r, 0));
+              }
+            }
+          }
+          return outFiles;
+        }
+
+        const newFilesTree = await walkBuild(origManifest.files, '', false);
+        const headerBuf = encodeAsarPickleHeader({ files: newFilesTree });
+        const totalSize = headerBuf.length + currentPackedOffset;
+
+        return {
+          headerBuf,
+          packedChunks,
+          totalSize,
+          unpackedFilesToWrite
+        };
+      }
+
+      async function detectAppImageFormat(reader) {
+        const head = await reader.read(0, 64);
+        const isElf = head.length >= 4 && head[0] === 0x7F && head[1] === 0x45 && head[2] === 0x4C && head[3] === 0x46;
+        const elfEnd = isElf ? getElfEndOffset(head) : 0;
+
+        // 1. Check SquashFS right after ELF end
+        if (elfEnd > 0 && elfEnd + 96 <= reader.size) {
+          const probe = await reader.read(elfEnd, 96);
+          if (isValidSquashfsSuperblock(probe, 0, reader.size - elfEnd)) {
+            return { type: 'squashfs', offset: elfEnd, isElf };
+          }
+        }
+
+        // 2. Check SquashFS at offset 0 (raw SquashFS image)
+        if (reader.size >= 96) {
+          const probe0 = await reader.read(0, 96);
+          if (isValidSquashfsSuperblock(probe0, 0, reader.size)) {
+            return { type: 'squashfs', offset: 0, isElf };
+          }
+        }
+
+        // 3. Check ISO9660 Type 1 AppImage ('CD001' at 0x8001 or elfEnd + 0x8001)
+        if (reader.size >= 0x8006) {
+          const isoProbe = await reader.read(0x8000, 8);
+          if (isoProbe[0] === 1 && isoProbe[1] === 0x43 && isoProbe[2] === 0x44 &&
+              isoProbe[3] === 0x30 && isoProbe[4] === 0x30 && isoProbe[5] === 0x31) {
+            return { type: 'iso9660', offset: 0, isElf };
+          }
+        }
+        if (elfEnd > 0 && reader.size >= elfEnd + 0x8006) {
+          const isoProbe2 = await reader.read(elfEnd + 0x8000, 8);
+          if (isoProbe2[0] === 1 && isoProbe2[1] === 0x43 && isoProbe2[2] === 0x44 &&
+              isoProbe2[3] === 0x30 && isoProbe2[4] === 0x30 && isoProbe2[5] === 0x31) {
+            return { type: 'iso9660', offset: elfEnd, isElf };
+          }
+        }
+
+        // 4. Check standalone ASAR archive at offset 0
+        if (!isElf && reader.size >= 16) {
+          const asarPrefix = parseAsarHeaderPrefix(head, reader.size);
+          if (asarPrefix) {
+            try {
+              const jsonBytes = await reader.read(16, asarPrefix.jsonLen);
+              if (jsonBytes.length === asarPrefix.jsonLen) {
+                const parsed = JSON.parse(utf8Decoder.decode(jsonBytes));
+                if (parsed && typeof parsed === 'object' && parsed.files && typeof parsed.files === 'object') {
+                  return { type: 'asar', offset: 0, isElf: false };
+                }
+              }
+            } catch (_) {
+              // Not a valid ASAR archive; continue scanning
+            }
+          }
+        }
+
+        // 5. Scan first 16 MB for SquashFS superblock (handles padded/stripped ELF runtimes)
+        const maxScan = Math.min(reader.size, 16 * 1024 * 1024);
+        const step = 256 * 1024;
+        for (let base = 0; base < maxScan; base += step) {
+          const len = Math.min(step + 96, maxScan - base);
+          const buf = await reader.read(base, len);
+          for (let i = 0; i <= buf.length - 96; i++) {
+            if (buf[i] === 0x68 && buf[i + 1] === 0x73 && buf[i + 2] === 0x71 && buf[i + 3] === 0x73) {
+              if (isValidSquashfsSuperblock(buf, i, reader.size - (base + i))) {
+                return { type: 'squashfs', offset: base + i, isElf };
+              }
+            }
+          }
+        }
+
+        throw new Error('Could not locate a SquashFS, ISO 9660, or ASAR structure inside this file. Please provide a valid AppImage or .asar file.');
+      }
+
+      // =========================================================================
+      // 4. SquashFS v4.0 Parser (AppImage Type 2)
+      // =========================================================================
+      const COMPRESSION_NAMES = {
+        1: 'gzip',
+        2: 'lzma',
+        3: 'lzo',
+        4: 'xz',
+        5: 'lz4',
+        6: 'zstd',
+      };
+
+      async function parseSquashFS(reader, sqfsOffset, onProgress) {
+        const sbBytes = await reader.read(sqfsOffset, 96);
+        if (sbBytes.length < 96) throw new Error('Truncated SquashFS superblock.');
+        const dv = new DataView(sbBytes.buffer, sbBytes.byteOffset, 96);
+
+        const mkfsTime = dv.getUint32(8, true);
+        const blockSize = dv.getUint32(12, true);
+        const fragmentCount = dv.getUint32(16, true);
+        const compression = dv.getUint16(20, true);
+        const blockLog = dv.getUint16(22, true);
+        const noIds = dv.getUint16(26, true);
+        const compName = COMPRESSION_NAMES[compression] || ('unknown (' + compression + ')');
+        if (compression !== 1 && compression !== 4 && compression !== 5) {
+          throw new Error(
+            'This AppImage uses "' + compName + '" SquashFS compression, which is not supported in browser-local inspection yet. Supported compressions: gzip, xz, lz4, uncompressed.'
+          );
+        }
+
+        const rootInodeRef = dv.getBigUint64(32, true);
+        const idTableStart = sqfsOffset + Number(dv.getBigUint64(48, true));
+        const inodeTableStart = sqfsOffset + Number(dv.getBigUint64(64, true));
+        const dirTableStart = sqfsOffset + Number(dv.getBigUint64(72, true));
+        const fragmentTableStartVal = dv.getBigUint64(80, true);
+        const hasFragmentTable = fragmentCount > 0 && fragmentTableStartVal !== 0xFFFFFFFFFFFFFFFFn;
+        const fragmentTableStart = hasFragmentTable ? sqfsOffset + Number(fragmentTableStartVal) : -1;
+
+        const blockCache = new Map();
+        const fragmentCache = new Map();
+
+        async function decompressBlockPayload(rawPayload, isCompressed, maxOutSize) {
+          if (!isCompressed) return rawPayload;
+          if (compression === 1) return await decompressZlib(rawPayload);
+          if (compression === 4) return decompressXz(rawPayload);
+          if (compression === 5) return decompressLz4Block(rawPayload, maxOutSize);
+          throw new Error('Unsupported compression.');
+        }
+
+        async function decompressMetaBlock(rawPayload, isCompressed) {
+          return decompressBlockPayload(rawPayload, isCompressed, 16384);
+        }
+
+        async function getMetaBlock(absBlockOffset) {
+          if (blockCache.has(absBlockOffset)) {
+            return blockCache.get(absBlockOffset);
+          }
+          const hdr = await reader.read(absBlockOffset, 2);
+          if (hdr.length < 2) throw new Error('Unexpected end of SquashFS metadata block.');
+          const rawHeader = hdr[0] | (hdr[1] << 8);
+          const isCompressed = (rawHeader & 0x8000) === 0;
+          const diskSize = rawHeader & 0x7FFF;
+          const payload = await reader.read(absBlockOffset + 2, diskSize);
+          if (payload.length < diskSize) throw new Error('Truncated SquashFS metadata block payload.');
+          const data = await decompressMetaBlock(payload, isCompressed);
+          const entry = {
+            data,
+            nextAbsOffset: absBlockOffset + 2 + diskSize
+          };
+          if (blockCache.size > 512) {
+            const firstKey = blockCache.keys().next().value;
+            blockCache.delete(firstKey);
+          }
+          blockCache.set(absBlockOffset, entry);
+          return entry;
+        }
+
+        async function readMetaBytes(tableBase, relBlockOffset, innerOffset, byteCount) {
+          const out = new Uint8Array(byteCount);
+          let curAbsBlock = tableBase + relBlockOffset;
+          let curPos = innerOffset;
+          let written = 0;
+
+          while (written < byteCount) {
+            const blk = await getMetaBlock(curAbsBlock);
+            if (curPos >= blk.data.length) {
+              curPos -= blk.data.length;
+              curAbsBlock = blk.nextAbsOffset;
+              continue;
+            }
+            const avail = blk.data.length - curPos;
+            const take = Math.min(byteCount - written, avail);
+            out.set(blk.data.subarray(curPos, curPos + take), written);
+            written += take;
+            curPos += take;
+            if (curPos >= blk.data.length && written < byteCount) {
+              curPos = 0;
+              curAbsBlock = blk.nextAbsOffset;
+            }
+          }
+          return { bytes: out, nextAbsBlock: curAbsBlock, nextInnerOffset: curPos };
+        }
+
+        // Read SquashFS ID table (UID/GID values)
+        const ids = [];
+        if (noIds > 0) {
+          const numIdBlocks = Math.ceil(noIds / 2048);
+          const ptrBytes = await reader.read(idTableStart, numIdBlocks * 8);
+          if (ptrBytes.length >= numIdBlocks * 8) {
+            const ptrDv = new DataView(ptrBytes.buffer, ptrBytes.byteOffset, ptrBytes.byteLength);
+            for (let b = 0; b < numIdBlocks; b++) {
+              const relPtr = Number(ptrDv.getBigUint64(b * 8, true));
+              const blk = await getMetaBlock(sqfsOffset + relPtr);
+              const blkDv = new DataView(blk.data.buffer, blk.data.byteOffset, blk.data.byteLength);
+              const countInBlk = Math.min(noIds - ids.length, Math.floor(blk.data.length / 4));
+              for (let k = 0; k < countInBlk; k++) {
+                ids.push(blkDv.getUint32(k * 4, true));
+              }
+            }
+          }
+        }
+        if (ids.length === 0) ids.push(0);
+
+        class MetaCursor {
+          constructor(tableBase, relBlockOffset, innerOffset) {
+            this.absBlock = tableBase + relBlockOffset;
+            this.innerOffset = innerOffset;
+          }
+
+          async read(n) {
+            const res = await readMetaBytes(0, this.absBlock, this.innerOffset, n);
+            this.absBlock = res.nextAbsBlock;
+            this.innerOffset = res.nextInnerOffset;
+            return res.bytes;
+          }
+        }
+
+        async function readInode(relBlockOffset, innerOffset) {
+          const common = await readMetaBytes(inodeTableStart, relBlockOffset, innerOffset, 16);
+          const cdv = new DataView(common.bytes.buffer, common.bytes.byteOffset, 16);
+          const type = cdv.getUint16(0, true);
+          const mode = cdv.getUint16(2, true);
+          const uidIdx = cdv.getUint16(4, true);
+          const gidIdx = cdv.getUint16(6, true);
+          const mtime = cdv.getUint32(8, true);
+          const inodeNum = cdv.getUint32(12, true);
+
+          if (type === 1) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 16);
+            const dv1 = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 16);
+            return {
+              type: 'dir',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              startBlock: dv1.getUint32(0, true),
+              nlink: dv1.getUint32(4, true),
+              fileSize: dv1.getUint16(8, true),
+              offset: dv1.getUint16(10, true),
+              size: 0
+            };
+          }
+          if (type === 8) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 24);
+            const dv8 = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 24);
+            return {
+              type: 'dir',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              nlink: dv8.getUint32(0, true),
+              fileSize: dv8.getUint32(4, true),
+              startBlock: dv8.getUint32(8, true),
+              offset: dv8.getUint16(18, true),
+              size: 0
+            };
+          }
+          if (type === 2) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 16);
+            const dv2 = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 16);
+            return {
+              type: 'file',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              nlink: 1,
+              blocksStart: dv2.getUint32(0, true),
+              fragIndex: dv2.getUint32(4, true),
+              fragOffset: dv2.getUint32(8, true),
+              size: dv2.getUint32(12, true),
+              blockListAbsBlock: rest.nextAbsBlock,
+              blockListInnerOffset: rest.nextInnerOffset
+            };
+          }
+          if (type === 9) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 40);
+            const dv9 = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 40);
+            return {
+              type: 'file',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              blocksStart: Number(dv9.getBigUint64(0, true)),
+              size: Number(dv9.getBigUint64(8, true)),
+              nlink: dv9.getUint32(24, true),
+              fragIndex: dv9.getUint32(28, true),
+              fragOffset: dv9.getUint32(32, true),
+              blockListAbsBlock: rest.nextAbsBlock,
+              blockListInnerOffset: rest.nextInnerOffset
+            };
+          }
+          if (type === 3 || type === 10) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 8);
+            const dvs = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 8);
+            const nlink = dvs.getUint32(0, true);
+            const symLen = dvs.getUint32(4, true);
+            const targetRes = await readMetaBytes(0, rest.nextAbsBlock, rest.nextInnerOffset, symLen);
+            return {
+              type: 'symlink',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              nlink,
+              size: symLen,
+              target: utf8Decoder.decode(targetRes.bytes)
+            };
+          }
+          if (type === 4 || type === 5 || type === 11 || type === 12) {
+            const rest = await readMetaBytes(0, common.nextAbsBlock, common.nextInnerOffset, 8);
+            const dvd = new DataView(rest.bytes.buffer, rest.bytes.byteOffset, 8);
+            return {
+              type: (type === 4 || type === 11) ? 'block' : 'char',
+              inodeNum,
+              mode,
+              uidIdx,
+              gidIdx,
+              mtime,
+              nlink: dvd.getUint32(0, true),
+              rdev: dvd.getUint32(4, true),
+              size: 0
+            };
+          }
+          if (type === 6 || type === 13) return { type: 'fifo', inodeNum, mode, uidIdx, gidIdx, mtime, nlink: 1, size: 0 };
+          if (type === 7 || type === 14) return { type: 'socket', inodeNum, mode, uidIdx, gidIdx, mtime, nlink: 1, size: 0 };
+
+          return { type: 'other', inodeNum, mode, uidIdx, gidIdx, mtime, nlink: 1, size: 0 };
+        }
+
+        async function getFragmentData(fragIndex) {
+          if (fragmentCache.has(fragIndex)) {
+            return fragmentCache.get(fragIndex);
+          }
+          if (!hasFragmentTable || fragIndex >= fragmentCount) {
+            throw new Error('Invalid SquashFS fragment index.');
+          }
+          const metaIdx = Math.floor(fragIndex / 512);
+          const innerIdx = fragIndex % 512;
+          const ptrBytes = await reader.read(fragmentTableStart + metaIdx * 8, 8);
+          if (ptrBytes.length < 8) throw new Error('Truncated SquashFS fragment table pointer.');
+          const ptrDv = new DataView(ptrBytes.buffer, ptrBytes.byteOffset, 8);
+          const metaRelOffset = Number(ptrDv.getBigUint64(0, true));
+          const metaBlk = await getMetaBlock(sqfsOffset + metaRelOffset);
+          const entryOffset = innerIdx * 16;
+          if (entryOffset + 16 > metaBlk.data.length) {
+            throw new Error('Truncated SquashFS fragment entry.');
+          }
+          const edv = new DataView(metaBlk.data.buffer, metaBlk.data.byteOffset + entryOffset, 16);
+          const fragStart = Number(edv.getBigUint64(0, true));
+          const rawSize = edv.getUint32(8, true);
+          const isCompressed = (rawSize & 0x01000000) === 0;
+          const diskSize = rawSize & 0x00FFFFFF;
+          const rawBytes = await reader.read(sqfsOffset + fragStart, diskSize);
+          if (rawBytes.length < diskSize) throw new Error('Truncated SquashFS fragment block.');
+          const data = await decompressBlockPayload(rawBytes, isCompressed, blockSize);
+          if (fragmentCache.size > 32) {
+            const oldest = fragmentCache.keys().next().value;
+            fragmentCache.delete(oldest);
+          }
+          fragmentCache.set(fragIndex, data);
+          return data;
+        }
+
+        function createSquashfsFileReader(inode) {
+          const hasFragment = inode.fragIndex !== 0xFFFFFFFF;
+          const numBlocks = hasFragment
+            ? Math.floor(inode.size / blockSize)
+            : Math.ceil(inode.size / blockSize);
+          let blockListInfo = null;
+          const decompressedBlocks = new Map();
+
+          async function ensureBlockList() {
+            if (blockListInfo) return blockListInfo;
+            if (numBlocks === 0) {
+              blockListInfo = {
+                rawSizes: new Uint32Array(0),
+                diskOffsets: new Float64Array(0),
+                totalDiskBytes: 0
+              };
+              return blockListInfo;
+            }
+            const res = await readMetaBytes(0, inode.blockListAbsBlock, inode.blockListInnerOffset, numBlocks * 4);
+            const dvList = new DataView(res.bytes.buffer, res.bytes.byteOffset, res.bytes.byteLength);
+            const rawSizes = new Uint32Array(numBlocks);
+            const diskOffsets = new Float64Array(numBlocks);
+            let curPos = sqfsOffset + inode.blocksStart;
+            let totalDiskBytes = 0;
+            for (let b = 0; b < numBlocks; b++) {
+              const raw = dvList.getUint32(b * 4, true);
+              rawSizes[b] = raw;
+              diskOffsets[b] = curPos;
+              const diskSz = raw === 0 ? 0 : (raw & 0x00FFFFFF);
+              curPos += diskSz;
+              totalDiskBytes += diskSz;
+            }
+            blockListInfo = { rawSizes, diskOffsets, totalDiskBytes };
+            return blockListInfo;
+          }
+
+          async function readSlice(offset, length) {
+            if (offset < 0 || length <= 0 || offset >= inode.size) {
+              return new Uint8Array(0);
+            }
+            const actualLen = Math.min(length, inode.size - offset);
+            const readEnd = offset + actualLen;
+            const out = new Uint8Array(actualLen);
+            const info = await ensureBlockList();
+
+            const firstBlock = Math.floor(offset / blockSize);
+            const lastFullLimit = Math.min(numBlocks, Math.ceil(readEnd / blockSize));
+
+            for (let b = firstBlock; b < lastFullLimit; b++) {
+              const rawBlockSize = info.rawSizes[b];
+              const isSparse = rawBlockSize === 0;
+              const isCompressed = (rawBlockSize & 0x01000000) === 0;
+              const diskSize = isSparse ? 0 : (rawBlockSize & 0x00FFFFFF);
+
+              const blockStartInFile = b * blockSize;
+              const blockUncompSize = (b === numBlocks - 1 && !hasFragment)
+                ? (inode.size - blockStartInFile)
+                : blockSize;
+              const blockEndInFile = blockStartInFile + blockUncompSize;
+
+              let blkData;
+              if (isSparse) {
+                blkData = new Uint8Array(blockUncompSize);
+              } else if (decompressedBlocks.has(b)) {
+                blkData = decompressedBlocks.get(b);
+              } else {
+                const raw = await reader.read(info.diskOffsets[b], diskSize);
+                if (raw.length < diskSize) throw new Error('Truncated SquashFS file block.');
+                blkData = await decompressBlockPayload(raw, isCompressed, blockSize);
+                if (decompressedBlocks.size > 64) {
+                  const oldest = decompressedBlocks.keys().next().value;
+                  decompressedBlocks.delete(oldest);
+                }
+                decompressedBlocks.set(b, blkData);
+              }
+
+              const copyStart = Math.max(offset, blockStartInFile);
+              const copyEnd = Math.min(readEnd, blockEndInFile);
+              const srcStart = copyStart - blockStartInFile;
+              const srcEnd = copyEnd - blockStartInFile;
+              out.set(blkData.subarray(srcStart, srcEnd), copyStart - offset);
+            }
+
+            const fragStartInFile = numBlocks * blockSize;
+            if (hasFragment && readEnd > fragStartInFile) {
+              const fragBuf = await getFragmentData(inode.fragIndex);
+              const copyStart = Math.max(offset, fragStartInFile);
+              const copyEnd = Math.min(readEnd, inode.size);
+              const srcStart = inode.fragOffset + (copyStart - fragStartInFile);
+              const srcEnd = inode.fragOffset + (copyEnd - fragStartInFile);
+              if (srcEnd <= fragBuf.length && copyEnd > copyStart) {
+                out.set(fragBuf.subarray(srcStart, srcEnd), copyStart - offset);
+              }
+            }
+
+            return out;
+          }
+
+          readSlice.ensureBlockList = ensureBlockList;
+          return readSlice;
+        }
+
+        const rootStartBlock = Number(rootInodeRef >> 16n);
+        const rootOffset = Number(rootInodeRef & 0xFFFFn);
+        const rootInode = await readInode(rootStartBlock, rootOffset);
+        if (rootInode.type !== 'dir') {
+          throw new Error('SquashFS root inode is not a directory.');
+        }
+
+        const sqfsRootNode = {
+          name: '',
+          path: '',
+          type: 'dir',
+          mode: rootInode.mode,
+          uidIdx: rootInode.uidIdx,
+          gidIdx: rootInode.gidIdx,
+          mtime: rootInode.mtime,
+          origInodeNum: rootInode.inodeNum,
+          children: []
+        };
+
+        const entries = [];
+        const asarArchives = new Map();
+        const queue = [{ inode: rootInode, path: '', treeNode: sqfsRootNode }];
+        const visitedDirs = new Set();
+        let asarCount = 0;
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          const dirInode = current.inode;
+          const bytesToRead = dirInode.fileSize - 3;
+          if (bytesToRead <= 0) continue;
+
+          const dirKey = dirInode.startBlock + ':' + dirInode.offset;
+          if (visitedDirs.has(dirKey)) continue;
+          visitedDirs.add(dirKey);
+
+          const cursor = new MetaCursor(dirTableStart, dirInode.startBlock, dirInode.offset);
+          let bytesRead = 0;
+
+          while (bytesRead < bytesToRead) {
+            const dhBytes = await cursor.read(12);
+            bytesRead += 12;
+            const dhdv = new DataView(dhBytes.buffer, dhBytes.byteOffset, 12);
+            const count = dhdv.getUint32(0, true) + 1;
+            const entryInodeBlock = dhdv.getUint32(4, true);
+
+            for (let i = 0; i < count && bytesRead < bytesToRead; i++) {
+              const deBytes = await cursor.read(8);
+              bytesRead += 8;
+              const dedv = new DataView(deBytes.buffer, deBytes.byteOffset, 8);
+              const entryOffset = dedv.getUint16(0, true);
+              const entryType = dedv.getUint16(4, true);
+              const nameSize = dedv.getUint16(6, true) + 1;
+
+              const nameBytes = await cursor.read(nameSize);
+              bytesRead += nameSize;
+              const name = utf8Decoder.decode(nameBytes);
+              const fullPath = current.path ? current.path + '/' + name : name;
+              const depth = current.path ? current.path.split('/').length : 0;
+
+              const childInode = await readInode(entryInodeBlock, entryOffset);
+              const resolvedType = childInode.type || (entryType === 1 ? 'dir' : entryType === 3 ? 'symlink' : 'file');
+
+              const sqfsChildNode = {
+                name,
+                path: fullPath,
+                type: resolvedType,
+                mode: childInode.mode,
+                uidIdx: childInode.uidIdx || 0,
+                gidIdx: childInode.gidIdx || 0,
+                mtime: childInode.mtime || mkfsTime,
+                origInodeNum: childInode.inodeNum,
+                size: childInode.size || 0,
+                target: childInode.target || '',
+                rdev: childInode.rdev || 0,
+                inode: childInode,
+                children: resolvedType === 'dir' ? [] : null
+              };
+              current.treeNode.children.push(sqfsChildNode);
+
+              const node = {
+                name,
+                path: fullPath,
+                parentPath: current.path,
+                type: resolvedType,
+                size: childInode.size || 0,
+                target: childInode.target || '',
+                depth,
+                inAsar: false
+              };
+
+              if (node.type === 'file' && name.toLowerCase().endsWith('.asar') && childInode.size >= 16) {
+                try {
+                  const readSlice = createSquashfsFileReader(childInode);
+                  const asarRes = await parseAsarEntries(readSlice, childInode.size, fullPath, depth + 1, fullPath);
+                  node.type = 'dir';
+                  node.isAsar = true;
+                  asarCount++;
+                  asarArchives.set(fullPath, {
+                    sqfsNode: sqfsChildNode,
+                    readSlice,
+                    manifest: asarRes.manifest,
+                    headerTotalSize: asarRes.headerTotalSize,
+                    hasIntegrity: asarRes.hasIntegrity
+                  });
+                  entries.push(node);
+                  for (const asarEntry of asarRes.entries) {
+                    entries.push(asarEntry);
+                  }
+                } catch (_) {
+                  entries.push(node);
+                }
+              } else {
+                entries.push(node);
+                if (node.type === 'dir') {
+                  queue.push({ inode: childInode, path: fullPath, treeNode: sqfsChildNode });
+                }
+              }
+            }
+          }
+
+          if (onProgress && entries.length % 400 < 50) {
+            onProgress(entries.length);
+          }
+        }
+
+        return {
+          formatLabel: 'SquashFS (' + compName + ')',
+          asarCount,
+          entries,
+          sqfsModel: {
+            sqfsOffset,
+            blockSize,
+            blockLog,
+            compression,
+            mkfsTime,
+            ids,
+            rootNode: sqfsRootNode,
+            asarArchives,
+            createFileReader: createSquashfsFileReader
+          }
+        };
+      }
+
+      // =========================================================================
+      // 4B. SquashFS v4.0 Repacker (writes Type 2 AppImage SquashFS + ELF)
+      // =========================================================================
+      function compareUtf8Bytes(a, b) {
+        const len = Math.min(a.length, b.length);
+        for (let i = 0; i < len; i++) {
+          if (a[i] !== b[i]) return a[i] - b[i];
+        }
+        return a.length - b.length;
+      }
+
+      class SquashfsMetaWriter {
+        constructor() {
+          this.uncompBuf = new Uint8Array(8192);
+          this.uncompLen = 0;
+          this.compressedSize = 0;
+          this.chunks = [];
+        }
+
+        getPosition() {
+          return {
+            relBlock: this.compressedSize,
+            innerOffset: this.uncompLen
+          };
+        }
+
+        async flushBlock() {
+          if (this.uncompLen === 0) return;
+          const raw = this.uncompBuf.slice(0, this.uncompLen);
+          const comp = await compressZlib(raw);
+          let payload;
+          let hdr;
+          if (comp && comp.length < raw.length) {
+            payload = comp;
+            hdr = payload.length & 0x7FFF;
+          } else {
+            payload = raw;
+            hdr = (payload.length & 0x7FFF) | 0x8000;
+          }
+          const blockOut = new Uint8Array(2 + payload.length);
+          blockOut[0] = hdr & 0xFF;
+          blockOut[1] = (hdr >>> 8) & 0xFF;
+          blockOut.set(payload, 2);
+          this.chunks.push(blockOut);
+          this.compressedSize += blockOut.length;
+          this.uncompLen = 0;
+        }
+
+        async write(bytes) {
+          let srcOff = 0;
+          while (srcOff < bytes.length) {
+            if (this.uncompLen === 8192) {
+              await this.flushBlock();
+            }
+            const space = 8192 - this.uncompLen;
+            const take = Math.min(space, bytes.length - srcOff);
+            this.uncompBuf.set(bytes.subarray(srcOff, srcOff + take), this.uncompLen);
+            this.uncompLen += take;
+            srcOff += take;
+          }
+        }
+      }
+
+      function cloneSqfsTree(node) {
+        const copy = {
+          name: node.name,
+          path: node.path,
+          type: node.type,
+          mode: node.mode,
+          uidIdx: node.uidIdx || 0,
+          gidIdx: node.gidIdx || 0,
+          mtime: node.mtime || 0,
+          origInodeNum: node.origInodeNum || 0,
+          size: node.size || 0,
+          target: node.target || '',
+          rdev: node.rdev || 0,
+          inode: node.inode || null,
+          replacementBytes: null,
+          asarStreamSource: null,
+          children: node.children ? node.children.map(cloneSqfsTree) : null
+        };
+        return copy;
+      }
+
+      function ensureSqfsDirPath(rootNode, relDirPath, defaultMtime) {
+        if (!relDirPath) return rootNode;
+        const parts = relDirPath.split('/').filter(Boolean);
+        let cur = rootNode;
+        let curPath = '';
+        for (const part of parts) {
+          curPath = curPath ? curPath + '/' + part : part;
+          let child = cur.children.find((c) => c.name === part);
+          if (!child) {
+            child = {
+              name: part,
+              path: curPath,
+              type: 'dir',
+              mode: 0o755,
+              uidIdx: 0,
+              gidIdx: 0,
+              mtime: defaultMtime,
+              origInodeNum: 0,
+              size: 0,
+              target: '',
+              rdev: 0,
+              inode: null,
+              replacementBytes: null,
+              asarStreamSource: null,
+              children: []
+            };
+            cur.children.push(child);
+          }
+          cur = child;
+        }
+        return cur;
+      }
+
+      function upsertSqfsFile(rootNode, fullPath, bytes, mode, defaultMtime) {
+        const slashIdx = fullPath.lastIndexOf('/');
+        const dirPath = slashIdx >= 0 ? fullPath.slice(0, slashIdx) : '';
+        const fileName = slashIdx >= 0 ? fullPath.slice(slashIdx + 1) : fullPath;
+        const dirNode = ensureSqfsDirPath(rootNode, dirPath, defaultMtime);
+        let existing = dirNode.children.find((c) => c.name === fileName);
+        if (existing) {
+          existing.type = 'file';
+          existing.children = null;
+          existing.replacementBytes = bytes;
+          existing.asarStreamSource = null;
+          existing.size = bytes.length;
+          existing.origInodeNum = 0;
+          if (typeof mode === 'number') existing.mode = mode;
+        } else {
+          dirNode.children.push({
+            name: fileName,
+            path: fullPath,
+            type: 'file',
+            mode: typeof mode === 'number' ? mode : 0o644,
+            uidIdx: 0,
+            gidIdx: 0,
+            mtime: defaultMtime,
+            origInodeNum: 0,
+            size: bytes.length,
+            target: '',
+            rdev: 0,
+            inode: null,
+            replacementBytes: bytes,
+            asarStreamSource: null,
+            children: null
+          });
+        }
+      }
+
+      function createVirtualAsarChunkStream(asarResult, origReadSlice) {
+        const sources = [{ kind: 'mem', bytes: asarResult.headerBuf }, ...asarResult.packedChunks];
+        let srcIdx = 0;
+        let srcOff = 0;
+
+        return async function readNextChunk(maxBytes) {
+          const out = new Uint8Array(maxBytes);
+          let written = 0;
+          while (written < maxBytes && srcIdx < sources.length) {
+            const src = sources[srcIdx];
+            const srcLen = src.kind === 'mem' ? src.bytes.length : src.size;
+            const avail = srcLen - srcOff;
+            if (avail <= 0) {
+              srcIdx++;
+              srcOff = 0;
+              continue;
+            }
+            const take = Math.min(maxBytes - written, avail);
+            if (src.kind === 'mem') {
+              out.set(src.bytes.subarray(srcOff, srcOff + take), written);
+            } else {
+              const part = await origReadSlice(src.offset + srcOff, take);
+              out.set(part, written);
+            }
+            written += take;
+            srcOff += take;
+            if (srcOff >= srcLen) {
+              srcIdx++;
+              srcOff = 0;
+            }
+          }
+          return written === maxBytes ? out : out.subarray(0, written);
+        };
+      }
+
+      async function repackSquashFS({
+        reader,
+        sqfsModel,
+        sqfsFileReplacements,
+        asarRepackMap,
+        onProgress,
+        shouldAbort
+      }) {
+        const { sqfsOffset, blockSize, blockLog, compression, mkfsTime, ids, createFileReader } = sqfsModel;
+        const root = cloneSqfsTree(sqfsModel.rootNode);
+
+        // Apply direct SquashFS file replacements
+        for (const [relPath, bytes] of sqfsFileReplacements.entries()) {
+          upsertSqfsFile(root, relPath, bytes, undefined, mkfsTime);
+        }
+
+        // Apply repacked ASAR archives and their unpacked files
+        function findTreeNodeByPath(node, targetPath) {
+          if (node.path === targetPath) return node;
+          if (!node.children) return null;
+          for (const ch of node.children) {
+            if (targetPath === ch.path || targetPath.startsWith(ch.path + '/')) {
+              const found = findTreeNodeByPath(ch, targetPath);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+
+        for (const [asarPath, asarBundle] of asarRepackMap.entries()) {
+          const asarNode = findTreeNodeByPath(root, asarPath);
+          if (asarNode) {
+            asarNode.asarStreamSource = {
+              totalSize: asarBundle.result.totalSize,
+              readNextChunk: createVirtualAsarChunkStream(asarBundle.result, asarBundle.origReadSlice)
+            };
+            asarNode.size = asarBundle.result.totalSize;
+            asarNode.origInodeNum = 0;
+          }
+          for (const unpacked of asarBundle.result.unpackedFilesToWrite) {
+            const targetUnpackedPath = asarPath + '.unpacked/' + unpacked.relPath;
+            upsertSqfsFile(
+              root,
+              targetUnpackedPath,
+              unpacked.bytes,
+              unpacked.executable ? 0o755 : 0o644,
+              mkfsTime
+            );
+          }
+        }
+
+        // Collect all nodes & assign inode numbers (preserving unmodified hardlinks)
+        const allFiles = [];
+        const allOtherNonDirs = [];
+        const allDirsPostOrder = [];
+        const hardlinkGroups = new Map();
+        let nextInodeNum = 1;
+
+        function assignInodesAndCollect(node, parentInodeNum) {
+          node.parentInodeNum = parentInodeNum || 1;
+          if (node.type === 'dir') {
+            node.inodeNum = nextInodeNum++;
+            for (const ch of node.children) {
+              assignInodesAndCollect(ch, node.inodeNum);
+            }
+            allDirsPostOrder.push(node);
+          } else if (node.type === 'file') {
+            const isModified = Boolean(node.replacementBytes || node.asarStreamSource);
+            if (!isModified && node.origInodeNum > 0) {
+              if (hardlinkGroups.has(node.origInodeNum)) {
+                node.hardlinkLeader = hardlinkGroups.get(node.origInodeNum);
+                node.inodeNum = node.hardlinkLeader.inodeNum;
+                return;
+              }
+              node.inodeNum = nextInodeNum++;
+              hardlinkGroups.set(node.origInodeNum, node);
+            } else {
+              node.inodeNum = nextInodeNum++;
+            }
+            allFiles.push(node);
+          } else {
+            node.inodeNum = nextInodeNum++;
+            allOtherNonDirs.push(node);
+          }
+        }
+
+        assignInodesAndCollect(root, 1);
+        const totalInodes = nextInodeNum - 1;
+
+        // Output SquashFS parts; index 0 is 96-byte superblock placeholder
+        const sqfsParts = [new Uint8Array(96)];
+        let currentDiskOffset = 96;
+
+        // 1. Write all file data blocks
+        const totalFilesToPack = allFiles.length;
+        for (let fi = 0; fi < totalFilesToPack; fi++) {
+          if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
+          const fnode = allFiles[fi];
+          fnode.outBlocksStart = 0;
+          fnode.outBlockSizes = [];
+
+          if (fnode.size > 0) {
+            fnode.outBlocksStart = currentDiskOffset;
+
+            if (fnode.replacementBytes !== null) {
+              const bytes = fnode.replacementBytes;
+              for (let off = 0; off < bytes.length; off += blockSize) {
+                const raw = bytes.subarray(off, Math.min(bytes.length, off + blockSize));
+                const comp = await compressZlib(raw);
+                if (comp && comp.length < raw.length) {
+                  sqfsParts.push(comp);
+                  fnode.outBlockSizes.push(comp.length);
+                  currentDiskOffset += comp.length;
+                } else {
+                  sqfsParts.push(raw);
+                  fnode.outBlockSizes.push(raw.length | 0x01000000);
+                  currentDiskOffset += raw.length;
+                }
+              }
+            } else if (fnode.asarStreamSource) {
+              let remaining = fnode.size;
+              let blkIter = 0;
+              while (remaining > 0) {
+                if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
+                const raw = await fnode.asarStreamSource.readNextChunk(Math.min(blockSize, remaining));
+                if (!raw.length) break;
+                remaining -= raw.length;
+                const comp = await compressZlib(raw);
+                if (comp && comp.length < raw.length) {
+                  sqfsParts.push(comp);
+                  fnode.outBlockSizes.push(comp.length);
+                  currentDiskOffset += comp.length;
+                } else {
+                  sqfsParts.push(raw);
+                  fnode.outBlockSizes.push(raw.length | 0x01000000);
+                  currentDiskOffset += raw.length;
+                }
+                blkIter++;
+                if (blkIter % 16 === 0) {
+                  await new Promise((r) => setTimeout(r, 0));
+                }
+              }
+            } else {
+              // Unmodified file from original SquashFS
+              const origInode = fnode.inode;
+              const origHasFrag = origInode.fragIndex !== 0xFFFFFFFF;
+              const origFileReader = createFileReader(origInode);
+
+              if (compression === 1 && !origHasFrag) {
+                // Zero-copy fast path for unmodified gzip blocks without fragments
+                const info = await origFileReader.ensureBlockList();
+                for (let b = 0; b < info.rawSizes.length; b++) {
+                  fnode.outBlockSizes.push(info.rawSizes[b]);
+                }
+                if (info.totalDiskBytes > 0) {
+                  const absStart = sqfsOffset + origInode.blocksStart;
+                  sqfsParts.push(reader.file.slice(absStart, absStart + info.totalDiskBytes));
+                  currentDiskOffset += info.totalDiskBytes;
+                }
+              } else {
+                // Transcode from xz/lz4 or unpack fragment into clean blocks
+                let blkIter = 0;
+                for (let off = 0; off < fnode.size; off += blockSize) {
+                  if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
+                  const take = Math.min(blockSize, fnode.size - off);
+                  const raw = await origFileReader(off, take);
+                  const comp = await compressZlib(raw);
+                  if (comp && comp.length < raw.length) {
+                    sqfsParts.push(comp);
+                    fnode.outBlockSizes.push(comp.length);
+                    currentDiskOffset += comp.length;
+                  } else {
+                    sqfsParts.push(raw);
+                    fnode.outBlockSizes.push(raw.length | 0x01000000);
+                    currentDiskOffset += raw.length;
+                  }
+                  blkIter++;
+                  if (blkIter % 8 === 0) {
+                    await new Promise((r) => setTimeout(r, 0));
+                  }
+                }
+              }
+            }
+          }
+
+          if (onProgress && (fi % 10 === 0 || fi === totalFilesToPack - 1)) {
+            onProgress(fi + 1, totalFilesToPack);
+            await new Promise((r) => setTimeout(r, 0));
+          }
+        }
+
+        // 2. Write non-directory inodes into Inode Table
+        const inodeWriter = new SquashfsMetaWriter();
+        const dirWriter = new SquashfsMetaWriter();
+
+        function writeCommonInodeHeader(dv, type, node) {
+          dv.setUint16(0, type, true);
+          dv.setUint16(2, node.mode & 0xFFFF, true);
+          dv.setUint16(4, node.uidIdx & 0xFFFF, true);
+          dv.setUint16(6, node.gidIdx & 0xFFFF, true);
+          dv.setUint32(8, node.mtime >>> 0, true);
+          dv.setUint32(12, node.inodeNum >>> 0, true);
+        }
+
+        for (const fnode of allFiles) {
+          const pos = inodeWriter.getPosition();
+          fnode.inodeRelBlock = pos.relBlock;
+          fnode.inodeInnerOffset = pos.innerOffset;
+
+          const numBlocks = fnode.outBlockSizes.length;
+          const useExt = fnode.outBlocksStart > 0xFFFFFFFF || fnode.size > 0xFFFFFFFF;
+          const buf = new Uint8Array((useExt ? 56 : 32) + numBlocks * 4);
+          const dv = new DataView(buf.buffer);
+          writeCommonInodeHeader(dv, useExt ? 9 : 2, fnode);
+
+          if (useExt) {
+            dv.setBigUint64(16, BigInt(fnode.outBlocksStart), true);
+            dv.setBigUint64(24, BigInt(fnode.size), true);
+            dv.setBigUint64(32, 0n, true);
+            dv.setUint32(40, 1, true);
+            dv.setUint32(44, 0xFFFFFFFF, true);
+            dv.setUint32(48, 0, true);
+            dv.setUint32(52, 0xFFFFFFFF, true);
+            for (let b = 0; b < numBlocks; b++) {
+              dv.setUint32(56 + b * 4, fnode.outBlockSizes[b] >>> 0, true);
+            }
+          } else {
+            dv.setUint32(16, fnode.outBlocksStart >>> 0, true);
+            dv.setUint32(20, 0xFFFFFFFF, true);
+            dv.setUint32(24, 0, true);
+            dv.setUint32(28, fnode.size >>> 0, true);
+            for (let b = 0; b < numBlocks; b++) {
+              dv.setUint32(32 + b * 4, fnode.outBlockSizes[b] >>> 0, true);
+            }
+          }
+          await inodeWriter.write(buf);
+        }
+
+        for (const onode of allOtherNonDirs) {
+          const pos = inodeWriter.getPosition();
+          onode.inodeRelBlock = pos.relBlock;
+          onode.inodeInnerOffset = pos.innerOffset;
+
+          if (onode.type === 'symlink') {
+            const targetBytes = utf8Encoder.encode(onode.target || '');
+            const buf = new Uint8Array(24 + targetBytes.length);
+            const dv = new DataView(buf.buffer);
+            writeCommonInodeHeader(dv, 3, onode);
+            dv.setUint32(16, 1, true);
+            dv.setUint32(20, targetBytes.length >>> 0, true);
+            buf.set(targetBytes, 24);
+            await inodeWriter.write(buf);
+          } else if (onode.type === 'block' || onode.type === 'char') {
+            const buf = new Uint8Array(24);
+            const dv = new DataView(buf.buffer);
+            writeCommonInodeHeader(dv, onode.type === 'block' ? 4 : 5, onode);
+            dv.setUint32(16, 1, true);
+            dv.setUint32(20, (onode.rdev || 0) >>> 0, true);
+            await inodeWriter.write(buf);
+          } else {
+            const buf = new Uint8Array(20);
+            const dv = new DataView(buf.buffer);
+            writeCommonInodeHeader(dv, onode.type === 'socket' ? 7 : 6, onode);
+            dv.setUint32(16, 1, true);
+            await inodeWriter.write(buf);
+          }
+        }
+
+        // 3. Write Directory Table + Directory Inodes bottom-up (post-order)
+        function dirEntryTypeCode(node) {
+          switch (node.type) {
+            case 'dir': return 1;
+            case 'file': return 2;
+            case 'symlink': return 3;
+            case 'block': return 4;
+            case 'char': return 5;
+            case 'fifo': return 6;
+            case 'socket': return 7;
+            default: return 2;
+          }
+        }
+
+        for (const dnode of allDirsPostOrder) {
+          const sortedChildren = dnode.children
+            .map((ch) => ({
+              node: ch.hardlinkLeader ? ch.hardlinkLeader : ch,
+              origNode: ch,
+              nameBytes: utf8Encoder.encode(ch.name)
+            }))
+            .sort((a, b) => compareUtf8Bytes(a.nameBytes, b.nameBytes));
+
+          const dirStartPos = dirWriter.getPosition();
+          let dirBytesWritten = 0;
+          let subdirCount = 0;
+
+          let idx = 0;
+          while (idx < sortedChildren.length) {
+            const first = sortedChildren[idx];
+            const baseRelBlock = first.node.inodeRelBlock;
+            const baseInodeNum = first.node.inodeNum;
+            const group = [];
+
+            while (idx < sortedChildren.length && group.length < 256) {
+              const cand = sortedChildren[idx];
+              const inodeDiff = cand.node.inodeNum - baseInodeNum;
+              if (cand.node.inodeRelBlock !== baseRelBlock || inodeDiff < -32768 || inodeDiff > 32767) {
+                break;
+              }
+              if (cand.origNode.type === 'dir') subdirCount++;
+              group.push({
+                nameBytes: cand.nameBytes,
+                innerOffset: cand.node.inodeInnerOffset,
+                inodeDiff,
+                typeCode: dirEntryTypeCode(cand.origNode)
+              });
+              idx++;
+            }
+
+            const hdrBuf = new Uint8Array(12);
+            const hdv = new DataView(hdrBuf.buffer);
+            hdv.setUint32(0, group.length - 1, true);
+            hdv.setUint32(4, baseRelBlock >>> 0, true);
+            hdv.setUint32(8, baseInodeNum >>> 0, true);
+            await dirWriter.write(hdrBuf);
+            dirBytesWritten += 12;
+
+            for (const entry of group) {
+              const eBuf = new Uint8Array(8 + entry.nameBytes.length);
+              const edv = new DataView(eBuf.buffer);
+              edv.setUint16(0, entry.innerOffset & 0xFFFF, true);
+              edv.setInt16(2, entry.inodeDiff, true);
+              edv.setUint16(4, entry.typeCode, true);
+              edv.setUint16(6, entry.nameBytes.length - 1, true);
+              eBuf.set(entry.nameBytes, 8);
+              await dirWriter.write(eBuf);
+              dirBytesWritten += eBuf.length;
+            }
+          }
+
+          const dirFileSize = dirBytesWritten + 3;
+          const nlink = 2 + subdirCount;
+          const inodePos = inodeWriter.getPosition();
+          dnode.inodeRelBlock = inodePos.relBlock;
+          dnode.inodeInnerOffset = inodePos.innerOffset;
+
+          const useExtDir = dirFileSize > 65535 || dirStartPos.relBlock > 0xFFFFFFFF;
+          if (useExtDir) {
+            const buf = new Uint8Array(40);
+            const dv = new DataView(buf.buffer);
+            writeCommonInodeHeader(dv, 8, dnode);
+            dv.setUint32(16, nlink >>> 0, true);
+            dv.setUint32(20, dirFileSize >>> 0, true);
+            dv.setUint32(24, dirStartPos.relBlock >>> 0, true);
+            dv.setUint32(28, dnode.parentInodeNum >>> 0, true);
+            dv.setUint16(32, 0, true);
+            dv.setUint16(34, dirStartPos.innerOffset & 0xFFFF, true);
+            dv.setUint32(36, 0xFFFFFFFF, true);
+            await inodeWriter.write(buf);
+          } else {
+            const buf = new Uint8Array(32);
+            const dv = new DataView(buf.buffer);
+            writeCommonInodeHeader(dv, 1, dnode);
+            dv.setUint32(16, dirStartPos.relBlock >>> 0, true);
+            dv.setUint32(20, nlink >>> 0, true);
+            dv.setUint16(24, dirFileSize & 0xFFFF, true);
+            dv.setUint16(26, dirStartPos.innerOffset & 0xFFFF, true);
+            dv.setUint32(28, dnode.parentInodeNum >>> 0, true);
+            await inodeWriter.write(buf);
+          }
+        }
+
+        await inodeWriter.flushBlock();
+        await dirWriter.flushBlock();
+
+        const inodeTableStart = currentDiskOffset;
+        for (const c of inodeWriter.chunks) {
+          sqfsParts.push(c);
+          currentDiskOffset += c.length;
+        }
+
+        const dirTableStart = currentDiskOffset;
+        for (const c of dirWriter.chunks) {
+          sqfsParts.push(c);
+          currentDiskOffset += c.length;
+        }
+
+        // 4. Write ID Table
+        const idMetaPtrs = [];
+        for (let i = 0; i < ids.length; i += 2048) {
+          const sliceCount = Math.min(2048, ids.length - i);
+          const raw = new Uint8Array(sliceCount * 4);
+          const rdv = new DataView(raw.buffer);
+          for (let k = 0; k < sliceCount; k++) {
+            rdv.setUint32(k * 4, ids[i + k] >>> 0, true);
+          }
+          const idWriter = new SquashfsMetaWriter();
+          await idWriter.write(raw);
+          await idWriter.flushBlock();
+          idMetaPtrs.push(currentDiskOffset);
+          for (const c of idWriter.chunks) {
+            sqfsParts.push(c);
+            currentDiskOffset += c.length;
+          }
+        }
+
+        const idTableStart = currentDiskOffset;
+        const idPtrBuf = new Uint8Array(idMetaPtrs.length * 8);
+        const idPtrDv = new DataView(idPtrBuf.buffer);
+        for (let i = 0; i < idMetaPtrs.length; i++) {
+          idPtrDv.setBigUint64(i * 8, BigInt(idMetaPtrs[i]), true);
+        }
+        sqfsParts.push(idPtrBuf);
+        currentDiskOffset += idPtrBuf.length;
+
+        const bytesUsed = currentDiskOffset;
+
+        // Pad SquashFS image to 4096-byte boundary
+        const padMod = currentDiskOffset % 4096;
+        if (padMod !== 0) {
+          sqfsParts.push(new Uint8Array(4096 - padMod));
+        }
+
+        // 5. Fill Superblock (96 bytes)
+        const sb = new Uint8Array(96);
+        const sbdv = new DataView(sb.buffer);
+        const rootRef = (BigInt(root.inodeRelBlock) << 16n) | BigInt(root.inodeInnerOffset);
+        sbdv.setUint32(0, 0x73717368, true); // 'hsqs'
+        sbdv.setUint32(4, totalInodes >>> 0, true);
+        sbdv.setUint32(8, mkfsTime >>> 0, true);
+        sbdv.setUint32(12, blockSize >>> 0, true);
+        sbdv.setUint32(16, 0, true); // fragments = 0
+        sbdv.setUint16(20, 1, true); // compression = gzip/zlib
+        sbdv.setUint16(22, blockLog & 0xFFFF, true);
+        sbdv.setUint16(24, 0x0210, true); // NO_FRAGMENTS | NO_XATTRS
+        sbdv.setUint16(26, ids.length & 0xFFFF, true);
+        sbdv.setUint16(28, 4, true); // s_major
+        sbdv.setUint16(30, 0, true); // s_minor
+        sbdv.setBigUint64(32, rootRef, true);
+        sbdv.setBigUint64(40, BigInt(bytesUsed), true);
+        sbdv.setBigUint64(48, BigInt(idTableStart), true);
+        sbdv.setBigUint64(56, 0xFFFFFFFFFFFFFFFFn, true);
+        sbdv.setBigUint64(64, BigInt(inodeTableStart), true);
+        sbdv.setBigUint64(72, BigInt(dirTableStart), true);
+        sbdv.setBigUint64(80, 0xFFFFFFFFFFFFFFFFn, true);
+        sbdv.setBigUint64(88, 0xFFFFFFFFFFFFFFFFn, true);
+        sqfsParts[0] = sb;
+
+        // Prepend original ELF runtime header (0 .. sqfsOffset)
+        const parts = sqfsOffset > 0
+          ? [reader.file.slice(0, sqfsOffset), ...sqfsParts]
+          : sqfsParts;
+
+        return new Blob(parts, { type: 'application/octet-stream' });
+      }
+
+      // =========================================================================
+      // 5. ISO 9660 + Rock Ridge / Joliet Parser (AppImage Type 1)
+      // =========================================================================
+      async function parseIso9660(reader, baseOffset, onProgress) {
+        const SECTOR = 2048;
+        let rootExtent = 0;
+        let rootLength = 0;
+        let isJoliet = false;
+        let hasPrimary = false;
+
+        for (let sec = 16; sec < 32; sec++) {
+          const vd = await reader.read(baseOffset + sec * SECTOR, SECTOR);
+          if (vd.length < 200) break;
+          const type = vd[0];
+          if (vd[1] !== 0x43 || vd[2] !== 0x44 || vd[3] !== 0x30 || vd[4] !== 0x30 || vd[5] !== 0x31) break;
+          if (type === 255) break;
+
+          const dv = new DataView(vd.buffer, vd.byteOffset, vd.byteLength);
+          if (type === 1 && !hasPrimary) {
+            hasPrimary = true;
+            rootExtent = dv.getUint32(156 + 2, true);
+            rootLength = dv.getUint32(156 + 10, true);
+          } else if (type === 2) {
+            const esc0 = vd[88], esc1 = vd[89], esc2 = vd[90];
+            if (esc0 === 0x25 && esc1 === 0x2F && (esc2 === 0x40 || esc2 === 0x43 || esc2 === 0x45)) {
+              // Keep primary if Rock Ridge might exist, unless we detect no RR later;
+              // actually primary with Rock Ridge is preferred on Linux AppImages.
+              if (!hasPrimary) {
+                isJoliet = true;
+                rootExtent = dv.getUint32(156 + 2, true);
+                rootLength = dv.getUint32(156 + 10, true);
+              }
+            }
+          }
+        }
+
+        if (!rootExtent) {
+          throw new Error('Invalid ISO 9660 Primary Volume Descriptor.');
+        }
+
+        const entries = [];
+        const queue = [{ lba: rootExtent, len: rootLength, path: '' }];
+        const visited = new Set();
+        let asarCount = 0;
+
+        while (queue.length > 0) {
+          const dir = queue.shift();
+          if (visited.has(dir.lba) || dir.len === 0) continue;
+          visited.add(dir.lba);
+
+          const dirBuf = await reader.read(baseOffset + dir.lba * SECTOR, dir.len);
+          const dv = new DataView(dirBuf.buffer, dirBuf.byteOffset, dirBuf.byteLength);
+          let pos = 0;
+
+          while (pos < dirBuf.length) {
+            const recLen = dirBuf[pos];
+            if (recLen === 0) {
+              const nextSec = Math.floor(pos / SECTOR) * SECTOR + SECTOR;
+              if (nextSec >= dirBuf.length) break;
+              pos = nextSec;
+              continue;
+            }
+            if (pos + recLen > dirBuf.length) break;
+
+            const extentLba = dv.getUint32(pos + 2, true);
+            const dataLen = dv.getUint32(pos + 10, true);
+            const flags = dirBuf[pos + 25];
+            const nameLen = dirBuf[pos + 32];
+            const rawName = dirBuf.subarray(pos + 33, pos + 33 + nameLen);
+
+            const isDot = nameLen === 1 && (rawName[0] === 0x00 || rawName[0] === 0x01);
+            if (!isDot) {
+              let name = isJoliet
+                ? utf16beDecoder.decode(rawName)
+                : utf8Decoder.decode(rawName).replace(/;\d+$/, '');
+
+              let isDir = (flags & 0x02) !== 0;
+              let isSymlink = false;
+              let symTarget = '';
+
+              // Parse System Use / Rock Ridge (SUSP)
+              let suPos = pos + 33 + nameLen + (nameLen % 2 === 0 ? 1 : 0);
+              const recEnd = pos + recLen;
+              let rrName = '';
+              let rrSl = '';
+
+              while (suPos + 4 <= recEnd) {
+                const sig = String.fromCharCode(dirBuf[suPos], dirBuf[suPos + 1]);
+                const suLen = dirBuf[suPos + 2];
+                if (suLen < 4 || suPos + suLen > recEnd) break;
+
+                if (sig === 'NM' && suLen >= 5) {
+                  const nmFlags = dirBuf[suPos + 4];
+                  rrName += utf8Decoder.decode(dirBuf.subarray(suPos + 5, suPos + suLen));
+                  if ((nmFlags & 0x01) === 0) {
+                    name = rrName;
+                  }
+                } else if (sig === 'PX' && suLen >= 12) {
+                  const mode = dv.getUint32(suPos + 4, true);
+                  const fmt = mode & 0xF000;
+                  if (fmt === 0xA000) isSymlink = true;
+                  else if (fmt === 0x4000) isDir = true;
+                } else if (sig === 'SL' && suLen >= 5) {
+                  isSymlink = true;
+                  let cp = suPos + 5;
+                  while (cp + 2 <= suPos + suLen) {
+                    const cFlags = dirBuf[cp];
+                    const cLen = dirBuf[cp + 1];
+                    cp += 2;
+                    if (cFlags & 0x02) rrSl += '.';
+                    else if (cFlags & 0x04) rrSl += '..';
+                    else if (cFlags & 0x08) rrSl += '/';
+                    else if (cp + cLen <= suPos + suLen) {
+                      rrSl += utf8Decoder.decode(dirBuf.subarray(cp, cp + cLen));
+                    }
+                    cp += cLen;
+                    if ((cFlags & 0x01) === 0 && !(cFlags & 0x08) && cp < suPos + suLen) {
+                      rrSl += '/';
+                    }
+                  }
+                  symTarget = rrSl;
+                }
+                suPos += suLen;
+              }
+
+              if (rrName) name = rrName;
+              const fullPath = dir.path ? dir.path + '/' + name : name;
+              const type = isSymlink ? 'symlink' : isDir ? 'dir' : 'file';
+              const depth = dir.path ? dir.path.split('/').length : 0;
+
+              const node = {
+                name,
+                path: fullPath,
+                parentPath: dir.path,
+                type,
+                size: isDir ? 0 : dataLen,
+                target: symTarget,
+                depth
+              };
+
+              if (type === 'file' && name.toLowerCase().endsWith('.asar') && dataLen >= 16) {
+                try {
+                  const fileOffset = baseOffset + extentLba * SECTOR;
+                  const readSlice = async (off, len) => {
+                    const maxLen = Math.min(len, dataLen - off);
+                    if (off < 0 || maxLen <= 0) return new Uint8Array(0);
+                    return await reader.read(fileOffset + off, maxLen);
+                  };
+                  const asarRes = await parseAsarEntries(readSlice, dataLen, fullPath, depth + 1);
+                  node.type = 'dir';
+                  node.isAsar = true;
+                  asarCount++;
+                  entries.push(node);
+                  for (const asarEntry of asarRes.entries) {
+                    entries.push(asarEntry);
+                  }
+                } catch (_) {
+                  entries.push(node);
+                }
+              } else {
+                entries.push(node);
+                if (isDir) {
+                  queue.push({ lba: extentLba, len: dataLen, path: fullPath });
+                }
+              }
+            }
+            pos += recLen;
+          }
+
+          if (onProgress && entries.length % 400 < 50) {
+            onProgress(entries.length);
+          }
+        }
+
+        return {
+          formatLabel: 'ISO 9660',
+          asarCount,
+          entries
+        };
+      }
+
+      // =========================================================================
+      // 6. Embedded Default Tray Icons, UI State & Repack Pipeline
+      // =========================================================================
+      const DEFAULT_TRAY_ICON_B64 = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADsAAAA7AF5KHG9AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAkpJREFUWIXFl0lrFUEUhc9rVJxQBMWYnYkGBSdw4YA4gC6zcuVP8Ac47PwFDjEBkyAu3SkaBHcudGEEB0REo+BCERQ18WkeDiifNFSH+8qu7n6v++VduPSl+tY5p6qr7qVrgLppUVfZVUzAEUljkp5Lqksix+sud1TS4Vx0IORbgXuUt7vAlhBPLXAGBiVdlbTcjL2R9FJSI2dNyyRtlrTejM1KOibpVpEd2Av8NCu4AWzL2KmQ7wAmDM4PYLefJ29gKfDOTDrRBrHvpwzeW2BJloDTJnmoAvLERwzuySwBUy7pM7CiQgErgS8O+4V9F5njsEHSgIuvSfqm6iy+mtddvElSX/IiMklzg5IeqHqbNHF/moBVJp7pgIDpNK7IDH4y8ZoOCFhr4o9pAl65Uhrb/g4I2OeeMcfruVGaT+tjd1JngXUV3oJe4LvDvh+6BXINJCmnw5JqKm8xxyVT1seb3tKsdAHwzBSNUWBhydWfN3gPgSirEAnYCEybSU+Bo34JLehnDU6MOeDnKDBxp9cTcA1qyq0i8f+ai/FzZm4DOJCWpwyAHuAK8Jew9aTMi1v8BZMTH+hDIR4V2MY+1xVvAo+APw74fYB8yCNPXXkrAmR8MfDbgU/kkDeyVt6ugF2G4IxHfrHotpcRcNyQDBryYY/8YFFMtSjgsiHqdeQj7ZK3IyAp1R8C5JkHrqyARcAvR3YbGDfkdWBPq+StClhtCJPGEtvXnIJU6Sd4QrPNuJuh+RLQD9xxn2IS2F6GPPbQn9G8Wdf/jv8BxNQ7ix5zWQ4AAAAASUVORK5CYII=';
+      const DEFAULT_TRAY_UNREAD_ICON_B64 = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADsAAAA7AF5KHG9AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAxJJREFUWIXFl8tPU0EUxn/FUhFwYcKCha+ArwVIIkFRE42iQEAWamxECQox7nTpn+DGf0DdGjXuiBgjC5ECIaARiMSkIo8YCYEIKRhaXm2PmXJv29veW+gj8iWnmZlM5/vOzJlz5tpEhO1E1rayszUBl4FnwHdgEZBNbFGb+xS4tOnqImJlpSLSI+mjW0RKrHhsFjHQALwC8vWBvx5YmAP/WmKH7A7YUwC79xiGl4BG4F3sfJuJgDNAJ7BTdSbd8OUjzM+SFAoKoaIKDh4ND60AF4D+RAJygR/AXtXp7YDBHtJC+Tk4Wx3u/gaUpGWrIHyokw/1wWcX+IPp2UAXDEd83gc8iCbMihHQon6WfeDqSJ9cN9cHWPEZOcwEHAKOqIb7G/h84A9kxrxecI+EeY4BRWYCisIH9Stz3uum1oxCsd6wRw2GL45SrP6USSypi2jCZY8a/KM3cvJgPcMCdoUzSgizZgJGtVRqO1AMfb2ZFbA/fMAhjp9mMTAFDKtGaRnB3PzMBWFePpQcDxErDADTZgLQCgjZ2WRddUJA0g8+tcb1RnA4sIUY4DkJMqFd5SCgRHV6uuHNawgESBk3nHAxUhO/AieBYKJacFjbplCkTk1BezuMjMDaJoUoFk4nVEfSsAeo1GItDJtFNSwH2vS0rLDuh/k5WFElRcOLlzA+bk7eeBNqIuQqD9YBrth5dgvxaqsqgMfAHRUr2XYoLDROmpndCDKDRzZoumUg92rlPY5cIdGLaAZo1Y7kEfAWGARClB4PzHviA+52PHk98MmKxM7mmACeaJaj3ibAjvFJY7ZUnrc0Qa1x2y09T0ZANMrULVWNsYmIAEV+rxnqauK23dLzVF/FJ/TG6MRGuvYLtDZDvZH8ylbIUxGgbkcI7jEIBOH+XWiojSPv2vKKYv0qNrNB9cz1esVXdU2k7b3h9bskIueTXI9kJjtEZFUxucdkur3DQL4oIqeTJU9WQIHOtrom61HkCyJSmQp5sgKUDcV8dHhE5FSq5KkIKBaRTu0o+kWkLB1yZVa14L9h27+O/wGnBA+MD+tcSwAAAABJRU5ErkJggg==';
+
+      function base64ToUint8Array(b64) {
+        const bin = atob(b64);
+        const out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) {
+          out[i] = bin.charCodeAt(i);
+        }
+        return out;
+      }
+
+      const DEFAULT_TRAY_ICONS = {
+        trayIcon: {
+          bytes: base64ToUint8Array(DEFAULT_TRAY_ICON_B64),
+          fileName: 'trayIcon.png',
+          previewUrl: 'data:image/png;base64,' + DEFAULT_TRAY_ICON_B64,
+          isDefault: true
+        },
+        trayUnreadIcon: {
+          bytes: base64ToUint8Array(DEFAULT_TRAY_UNREAD_ICON_B64),
+          fileName: 'trayUnreadIcon.png',
+          previewUrl: 'data:image/png;base64,' + DEFAULT_TRAY_UNREAD_ICON_B64,
+          isDefault: true
+        }
+      };
+
+      const ROW_HEIGHT = 36;
+
+      const elLanding = document.getElementById('landing');
+      const elWorkspace = document.getElementById('workspace');
+      const elFileInput = document.getElementById('fileInput');
+      const elTrayIconInput = document.getElementById('trayIconInput');
+      const elTrayUnreadIconInput = document.getElementById('trayUnreadIconInput');
+      const elGenericReplaceInput = document.getElementById('genericReplaceInput');
+      const elUploadBtn = document.getElementById('uploadBtn');
+      const elReloadBtn = document.getElementById('reloadBtn');
+      const elRepackBtn = document.getElementById('repackBtn');
+      const elDropOverlay = document.getElementById('dropOverlay');
+      const elFileTitle = document.getElementById('fileTitle');
+      const elFileMeta = document.getElementById('fileMeta');
+      const elErrorBox = document.getElementById('errorBox');
+      const elPatcherPanel = document.getElementById('patcherPanel');
+      const elPatcherSummary = document.getElementById('patcherSummary');
+      const elToggleMatchedPathsBtn = document.getElementById('toggleMatchedPathsBtn');
+      const elPatcherPathsBox = document.getElementById('patcherPathsBox');
+      const elPatcherGrid = document.getElementById('patcherGrid');
+      const elPatcherProgress = document.getElementById('patcherProgress');
+      const elPatcherProgressLabel = document.getElementById('patcherProgressLabel');
+      const elPatcherProgressPct = document.getElementById('patcherProgressPct');
+      const elPatcherProgressFill = document.getElementById('patcherProgressFill');
+      const elPatcherStatus = document.getElementById('patcherStatus');
+      const elInspectBar = document.getElementById('inspectBar');
+      const elInspectFilesBtn = document.getElementById('inspectFilesBtn');
+      const elToolbar = document.getElementById('toolbar');
+      const elTableShell = document.getElementById('tableShell');
+      const elSearchInput = document.getElementById('searchInput');
+      const elMatchCount = document.getElementById('matchCount');
+      const elModeTreeBtn = document.getElementById('modeTreeBtn');
+      const elModeListBtn = document.getElementById('modeListBtn');
+      const elColHeaderName = document.getElementById('colHeaderName');
+      const elLoadingPanel = document.getElementById('loadingPanel');
+      const elLoadingText = document.getElementById('loadingText');
+      const elEmptyPanel = document.getElementById('emptyPanel');
+      const elEmptyDesc = document.getElementById('emptyDesc');
+      const elVirtualScroll = document.getElementById('virtualScroll');
+      const elVirtualSpacer = document.getElementById('virtualSpacer');
+      const elVirtualRows = document.getElementById('virtualRows');
+
+      const state = {
+        allEntries: [],
+        entryByPath: new Map(),
+        childrenMap: new Map(),
+        expandedDirs: new Set(),
+        visibleRows: [],
+        viewMode: 'tree',
+        query: '',
+        dragCounter: 0,
+        showFileInspector: false,
+        // Repack / Patcher state
+        sourceFile: null,
+        sourceReader: null,
+        detectedType: null,
+        sqfsModel: null,
+        standaloneAsar: null,
+        replacements: new Map(), // path -> { bytes: Uint8Array, sourceName: string, kind: 'trayIcon' | 'trayUnreadIcon' | 'manual' }
+        trayIconTargets: [],
+        trayUnreadIconTargets: [],
+        trayUploads: {
+          trayIcon: null, // { bytes, fileName, previewUrl, isDefault }
+          trayUnreadIcon: null
+        },
+        showMatchedPaths: false,
+        pendingGenericTargetPath: null,
+        isRepacking: false,
+        buildGen: 0,
+        activeBuildPromise: null,
+        readyBlob: null,
+        readyFileName: null,
+        downloadWhenReady: false
+      };
+
+      function formatBytes(bytes) {
+        if (!bytes) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+        const val = bytes / Math.pow(1024, i);
+        return (i === 0 ? val.toFixed(0) : val.toFixed(val >= 100 ? 0 : 1)) + ' ' + units[i];
+      }
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function makePatchedFilename(filename) {
+        const dotIdx = filename.lastIndexOf('.');
+        if (dotIdx > 0) {
+          return filename.slice(0, dotIdx) + '-PATCHED' + filename.slice(dotIdx);
+        }
+        return filename + '-PATCHED';
+      }
+
+      function triggerBlobDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+      }
+
+      function revokeTrayPreviewUrls() {
+        if (state.trayUploads.trayIcon && !state.trayUploads.trayIcon.isDefault && state.trayUploads.trayIcon.previewUrl) {
+          URL.revokeObjectURL(state.trayUploads.trayIcon.previewUrl);
+        }
+        if (state.trayUploads.trayUnreadIcon && !state.trayUploads.trayUnreadIcon.isDefault && state.trayUploads.trayUnreadIcon.previewUrl) {
+          URL.revokeObjectURL(state.trayUploads.trayUnreadIcon.previewUrl);
+        }
+      }
+
+      function applyFileInspectorVisibility() {
+        const show = state.showFileInspector;
+        elToolbar.style.display = show ? 'flex' : 'none';
+        elTableShell.style.display = show ? 'flex' : 'none';
+        elInspectFilesBtn.textContent = show ? 'Hide files' : 'Inspect files';
+        elInspectFilesBtn.setAttribute('aria-expanded', show ? 'true' : 'false');
+        if (show) {
+          renderVirtualWindow();
+        }
+      }
+
+      function typeLabel(item) {
+        if (item.isAsar) return 'ASAR Folder';
+        if (item.unpacked) return 'Unpacked';
+        switch (item.type) {
+          case 'dir': return 'Folder';
+          case 'file': return 'File';
+          case 'symlink': return 'Symlink';
+          case 'block': return 'Block dev';
+          case 'char': return 'Char dev';
+          case 'fifo': return 'FIFO';
+          case 'socket': return 'Socket';
+          default: return 'Other';
+        }
+      }
+
+      function rowIconSvg(type) {
+        if (type === 'dir') {
+          return '<svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>';
+        }
+        if (type === 'symlink') {
+          return '<svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+        }
+        return '<svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>';
+      }
+
+      function chevronSvg(expanded) {
+        return expanded
+          ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+          : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+      }
+
+      function sortEntries(list) {
+        return list.sort((a, b) => {
+          if (a.type === 'dir' && b.type !== 'dir') return -1;
+          if (a.type !== 'dir' && b.type === 'dir') return 1;
+          return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        });
+      }
+
+      function buildTreeIndex(entries) {
+        const map = new Map();
+        const byPath = new Map();
+        for (const entry of entries) {
+          byPath.set(entry.path, entry);
+          const parent = entry.parentPath || '';
+          if (!map.has(parent)) map.set(parent, []);
+          map.get(parent).push(entry);
+        }
+        for (const children of map.values()) {
+          sortEntries(children);
+        }
+        state.childrenMap = map;
+        state.entryByPath = byPath;
+      }
+
+      function isRepackSupported() {
+        return state.detectedType === 'squashfs' || state.detectedType === 'asar';
+      }
+
+      function scanTrayIconTargets(entries) {
+        const trayIcon = [];
+        const trayUnreadIcon = [];
+        for (const entry of entries) {
+          if (entry.type !== 'file') continue;
+          if (!entry.name.toLowerCase().endsWith('.png')) continue;
+          if (entry.name.startsWith('trayUnreadIcon')) {
+            trayUnreadIcon.push(entry);
+          } else if (entry.name.startsWith('trayIcon')) {
+            trayIcon.push(entry);
+          }
+        }
+        state.trayIconTargets = trayIcon;
+        state.trayUnreadIconTargets = trayUnreadIcon;
+      }
+
+      function applyDefaultTrayIcons() {
+        if (state.trayIconTargets.length > 0) {
+          const def = DEFAULT_TRAY_ICONS.trayIcon;
+          state.trayUploads.trayIcon = { ...def };
+          for (const item of state.trayIconTargets) {
+            state.replacements.set(item.path, {
+              bytes: def.bytes,
+              sourceName: def.fileName,
+              kind: 'trayIcon'
+            });
+          }
+        }
+        if (state.trayUnreadIconTargets.length > 0) {
+          const def = DEFAULT_TRAY_ICONS.trayUnreadIcon;
+          state.trayUploads.trayUnreadIcon = { ...def };
+          for (const item of state.trayUnreadIconTargets) {
+            state.replacements.set(item.path, {
+              bytes: def.bytes,
+              sourceName: def.fileName,
+              kind: 'trayUnreadIcon'
+            });
+          }
+        }
+      }
+
+      function updateRepackButton() {
+        if (!isRepackSupported()) {
+          elRepackBtn.hidden = true;
+          return;
+        }
+        elRepackBtn.hidden = false;
+        if (state.isRepacking) {
+          elRepackBtn.disabled = false;
+          elRepackBtn.textContent = state.downloadWhenReady
+            ? 'Downloading when ready...'
+            : 'Preparing -PATCHED...';
+        } else if (state.readyBlob) {
+          elRepackBtn.disabled = false;
+          elRepackBtn.textContent = 'Download -PATCHED';
+        } else {
+          elRepackBtn.disabled = false;
+          const count = state.replacements.size;
+          elRepackBtn.textContent = count > 0 ? 'Patch & Download (' + count + ')' : 'Repack & Download';
+        }
+      }
+
+      function setPatcherProgress(visible, label, pct) {
+        elPatcherProgress.hidden = !visible;
+        if (visible) {
+          elPatcherProgressLabel.textContent = label || '';
+          const clamped = Math.max(0, Math.min(100, Math.round(pct || 0)));
+          elPatcherProgressPct.textContent = clamped + '%';
+          elPatcherProgressFill.style.width = clamped + '%';
+        }
+      }
+
+      function renderPatcherPanel() {
+        if (!isRepackSupported()) {
+          elPatcherPanel.hidden = true;
+          return;
+        }
+
+        elPatcherPanel.hidden = false;
+        const nTray = state.trayIconTargets.length;
+        const nUnread = state.trayUnreadIconTargets.length;
+        const totalFound = nTray + nUnread;
+
+        if (totalFound === 0) {
+          elPatcherSummary.textContent = 'No trayIcon*.png or trayUnreadIcon*.png files detected. Click "Inspect files" below to replace individual files and repack.';
+          elToggleMatchedPathsBtn.hidden = true;
+          elPatcherPathsBox.hidden = true;
+          elPatcherGrid.innerHTML = '';
+          updateRepackButton();
+          return;
+        }
+
+        const parts = [];
+        if (nTray > 0) parts.push(nTray + ' trayIcon*.png');
+        if (nUnread > 0) parts.push(nUnread + ' trayUnreadIcon*.png');
+        elPatcherSummary.textContent =
+          'Found ' + parts.join(' and ') + '. Default icons are pre-selected and patching starts immediately; use "Select PNG" to load custom images.';
+
+        elToggleMatchedPathsBtn.hidden = false;
+        elToggleMatchedPathsBtn.textContent = state.showMatchedPaths ? 'Hide matched paths' : 'Show matched paths (' + totalFound + ')';
+        elPatcherPathsBox.hidden = !state.showMatchedPaths;
+
+        if (state.showMatchedPaths) {
+          const allTargets = [...state.trayIconTargets, ...state.trayUnreadIconTargets];
+          elPatcherPathsBox.innerHTML = allTargets.map((item) => {
+            const patched = state.replacements.has(item.path);
+            return '<div class="patcher-path-item">' +
+              '<span class="patcher-path-str" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span>' +
+              '<span class="patcher-path-tag' + (patched ? ' is-patched' : '') + '">' +
+                (patched ? 'Patched' : formatBytes(item.size)) +
+              '</span>' +
+            '</div>';
+          }).join('');
+        }
+
+        const cardsHtml = [];
+        if (nTray > 0) {
+          cardsHtml.push(buildTrayCardHtml('trayIcon', 'trayIcon.png', state.trayIconTargets, state.trayUploads.trayIcon));
+        }
+        if (nUnread > 0) {
+          cardsHtml.push(buildTrayCardHtml('trayUnreadIcon', 'trayUnreadIcon.png', state.trayUnreadIconTargets, state.trayUploads.trayUnreadIcon));
+        }
+        elPatcherGrid.innerHTML = cardsHtml.join('');
+        updateRepackButton();
+      }
+
+      function buildTrayCardHtml(kind, expectedName, targets, upload) {
+        const sampleNames = targets.slice(0, 3).map((t) => t.name).join(', ') + (targets.length > 3 ? ', ...' : '');
+        const isReady = Boolean(upload);
+        const thumbHtml = isReady
+          ? '<img src="' + upload.previewUrl + '" alt="' + escapeHtml(expectedName) + '" />'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+        const sourceTag = isReady ? (upload.isDefault ? 'Default' : 'Custom') : '';
+        const metaText = isReady
+          ? sourceTag + ': ' + escapeHtml(upload.fileName) + ' (' + formatBytes(upload.bytes.length) + ') -> ' + targets.length + (targets.length === 1 ? ' file' : ' files')
+          : 'Replaces ' + targets.length + (targets.length === 1 ? ' file' : ' files') + ': ' + escapeHtml(sampleNames);
+
+        return (
+          '<div class="patcher-card' + (isReady ? ' is-ready' : '') + '" data-tray-card="' + kind + '">' +
+            '<div class="patcher-card-left">' +
+              '<div class="patcher-thumb">' + thumbHtml + '</div>' +
+              '<div class="patcher-card-info">' +
+                '<div class="patcher-card-name">' + escapeHtml(expectedName) + '</div>' +
+                '<div class="patcher-card-meta" title="' + escapeHtml(sampleNames) + '">' + metaText + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="patcher-card-actions">' +
+              (isReady && !upload.isDefault ? '<button type="button" class="patcher-card-btn" data-reset-tray="' + kind + '">Default</button>' : '') +
+              '<button type="button" class="patcher-card-btn" data-pick-tray="' + kind + '">Select PNG</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      async function applyTrayReplacement(kind, file) {
+        if (!file) return;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const previewUrl = URL.createObjectURL(new Blob([bytes], { type: file.type || 'image/png' }));
+        if (state.trayUploads[kind] && !state.trayUploads[kind].isDefault && state.trayUploads[kind].previewUrl) {
+          URL.revokeObjectURL(state.trayUploads[kind].previewUrl);
+        }
+        state.trayUploads[kind] = { bytes, fileName: file.name, previewUrl, isDefault: false };
+
+        const targets = kind === 'trayIcon' ? state.trayIconTargets : state.trayUnreadIconTargets;
+        for (const item of targets) {
+          state.replacements.set(item.path, {
+            bytes,
+            sourceName: file.name,
+            kind
+          });
+        }
+
+        renderPatcherPanel();
+        if (state.showFileInspector) renderVirtualWindow();
+        scheduleBuildPatchedArchive(false);
+      }
+
+      function resetTrayToDefault(kind) {
+        if (state.trayUploads[kind] && !state.trayUploads[kind].isDefault && state.trayUploads[kind].previewUrl) {
+          URL.revokeObjectURL(state.trayUploads[kind].previewUrl);
+        }
+        const def = DEFAULT_TRAY_ICONS[kind];
+        state.trayUploads[kind] = { ...def };
+        const targets = kind === 'trayIcon' ? state.trayIconTargets : state.trayUnreadIconTargets;
+        for (const item of targets) {
+          state.replacements.set(item.path, {
+            bytes: def.bytes,
+            sourceName: def.fileName,
+            kind
+          });
+        }
+        renderPatcherPanel();
+        if (state.showFileInspector) renderVirtualWindow();
+        scheduleBuildPatchedArchive(false);
+      }
+
+      function scheduleBuildPatchedArchive(autoDownload) {
+        if (!state.sourceFile || !isRepackSupported()) return;
+        state.buildGen++;
+        const myGen = state.buildGen;
+        state.readyBlob = null;
+        state.readyFileName = null;
+        if (autoDownload) {
+          state.downloadWhenReady = true;
+        }
+        elPatcherStatus.hidden = true;
+        updateRepackButton();
+
+        const runAfterPrev = async () => {
+          if (state.activeBuildPromise) {
+            try { await state.activeBuildPromise; } catch (_) {}
+          }
+          if (myGen !== state.buildGen) return;
+          await buildPatchedArchive(myGen);
+        };
+        state.activeBuildPromise = runAfterPrev();
+      }
+
+      async function buildPatchedArchive(myGen) {
+        if (!state.sourceFile || !isRepackSupported() || myGen !== state.buildGen) return;
+
+        const shouldAbort = () => myGen !== state.buildGen;
+        state.isRepacking = true;
+        elErrorBox.classList.remove('is-visible');
+        elPatcherStatus.hidden = true;
+        updateRepackButton();
+        setPatcherProgress(true, 'Preparing patched archive...', 4);
+
+        try {
+          const outName = makePatchedFilename(state.sourceFile.name);
+          let outBlob = null;
+
+          if (state.detectedType === 'asar' && state.standaloneAsar) {
+            const repMap = new Map();
+            for (const [path, rep] of state.replacements.entries()) {
+              repMap.set(path, rep.bytes);
+            }
+            setPatcherProgress(true, 'Repacking ASAR archive...', 25);
+            const asarResult = await repackAsar({
+              readOrigSlice: (off, len) => state.sourceReader.read(off, len),
+              origManifest: state.standaloneAsar.manifest,
+              origHeaderTotalSize: state.standaloneAsar.headerTotalSize,
+              hasIntegrity: state.standaloneAsar.hasIntegrity,
+              replacementsMap: repMap,
+              shouldAbort,
+              onProgress: (cnt) => {
+                if (!shouldAbort()) {
+                  setPatcherProgress(true, 'Repacking ASAR (' + cnt.toLocaleString() + ' files)...', 45);
+                }
+              }
+            });
+            if (shouldAbort()) return;
+
+            setPatcherProgress(true, 'Building ' + outName + '...', 85);
+            const parts = [asarResult.headerBuf];
+            for (const chunk of asarResult.packedChunks) {
+              if (chunk.kind === 'mem') {
+                parts.push(chunk.bytes);
+              } else {
+                parts.push(state.sourceFile.slice(chunk.offset, chunk.offset + chunk.size));
+              }
+            }
+            outBlob = new Blob(parts, { type: 'application/octet-stream' });
+          } else if (state.detectedType === 'squashfs' && state.sqfsModel) {
+            const sqfsFileReplacements = new Map();
+            const perAsarReplacements = new Map();
+
+            for (const asarPath of state.sqfsModel.asarArchives.keys()) {
+              perAsarReplacements.set(asarPath, new Map());
+            }
+
+            for (const [path, rep] of state.replacements.entries()) {
+              const entry = state.entryByPath.get(path);
+              if (entry && entry.inAsar && entry.asarPath && perAsarReplacements.has(entry.asarPath)) {
+                perAsarReplacements.get(entry.asarPath).set(entry.asarRelPath, rep.bytes);
+                if (entry.unpacked) {
+                  sqfsFileReplacements.set(entry.asarPath + '.unpacked/' + entry.asarRelPath, rep.bytes);
+                }
+              } else {
+                sqfsFileReplacements.set(path, rep.bytes);
+              }
+            }
+
+            const asarRepackMap = new Map();
+            const asarEntries = Array.from(state.sqfsModel.asarArchives.entries());
+            for (let i = 0; i < asarEntries.length; i++) {
+              if (shouldAbort()) return;
+              const [asarPath, info] = asarEntries[i];
+              const repMap = perAsarReplacements.get(asarPath);
+              setPatcherProgress(
+                true,
+                'Repacking ' + asarPath + ' (--unpack *.node & sharp/@img)...',
+                10 + Math.round((i / Math.max(1, asarEntries.length)) * 25)
+              );
+              const res = await repackAsar({
+                readOrigSlice: info.readSlice,
+                origManifest: info.manifest,
+                origHeaderTotalSize: info.headerTotalSize,
+                hasIntegrity: info.hasIntegrity,
+                replacementsMap: repMap,
+                shouldAbort,
+                onProgress: (cnt) => {
+                  if (!shouldAbort()) {
+                    setPatcherProgress(true, 'Repacking ' + asarPath + ' (' + cnt.toLocaleString() + ' files)...', 20);
+                  }
+                }
+              });
+              asarRepackMap.set(asarPath, {
+                result: res,
+                origReadSlice: info.readSlice
+              });
+            }
+            if (shouldAbort()) return;
+
+            setPatcherProgress(true, 'Repacking SquashFS & AppImage...', 38);
+            outBlob = await repackSquashFS({
+              reader: state.sourceReader,
+              sqfsModel: state.sqfsModel,
+              sqfsFileReplacements,
+              asarRepackMap,
+              shouldAbort,
+              onProgress: (done, total) => {
+                if (!shouldAbort()) {
+                  const pct = 38 + Math.round((done / Math.max(1, total)) * 58);
+                  setPatcherProgress(true, 'Packing SquashFS files (' + done + ' / ' + total + ')...', pct);
+                }
+              }
+            });
+          }
+
+          if (shouldAbort() || !outBlob) return;
+
+          state.readyBlob = outBlob;
+          state.readyFileName = outName;
+          setPatcherProgress(true, 'Ready', 100);
+
+          if (state.downloadWhenReady) {
+            state.downloadWhenReady = false;
+            triggerBlobDownload(outBlob, outName);
+            elPatcherStatus.textContent = 'Downloaded ' + outName + ' (' + formatBytes(outBlob.size) + ').';
+          } else {
+            elPatcherStatus.textContent = 'Ready to save: ' + outName + ' (' + formatBytes(outBlob.size) + '). Click "Download -PATCHED" to save.';
+          }
+          elPatcherStatus.hidden = false;
+        } catch (err) {
+          if (err && err.message === '__BUILD_ABORTED__') {
+            return;
+          }
+          state.downloadWhenReady = false;
+          elErrorBox.textContent = err && err.message ? err.message : 'Failed to repack archive.';
+          elErrorBox.classList.add('is-visible');
+        } finally {
+          if (myGen === state.buildGen) {
+            state.isRepacking = false;
+            updateRepackButton();
+            setTimeout(() => {
+              if (!state.isRepacking && myGen === state.buildGen) {
+                setPatcherProgress(false);
+              }
+            }, 600);
+          }
+        }
+      }
+
+      function handleSaveOrRepackClick() {
+        if (!state.sourceFile || !isRepackSupported()) return;
+        if (state.readyBlob && state.readyFileName) {
+          triggerBlobDownload(state.readyBlob, state.readyFileName);
+          elPatcherStatus.textContent = 'Downloaded ' + state.readyFileName + ' (' + formatBytes(state.readyBlob.size) + ').';
+          elPatcherStatus.hidden = false;
+          return;
+        }
+        if (state.isRepacking) {
+          state.downloadWhenReady = !state.downloadWhenReady;
+          updateRepackButton();
+          return;
+        }
+        scheduleBuildPatchedArchive(true);
+      }
+
+      function computeVisibleRows() {
+        const q = state.query.trim().toLowerCase();
+
+        if (q.length > 0 || state.viewMode === 'list') {
+          const filtered = q.length > 0
+            ? state.allEntries.filter((e) => e.path.toLowerCase().includes(q))
+            : state.allEntries;
+          state.visibleRows = filtered;
+          elColHeaderName.textContent = 'Path';
+        } else {
+          const out = [];
+          function walk(parentPath) {
+            const children = state.childrenMap.get(parentPath);
+            if (!children) return;
+            for (const item of children) {
+              out.push(item);
+              if (item.type === 'dir' && state.expandedDirs.has(item.path)) {
+                walk(item.path);
+              }
+            }
+          }
+          walk('');
+          state.visibleRows = out;
+          elColHeaderName.textContent = 'Name';
+        }
+
+        const total = state.allEntries.length;
+        const shown = state.visibleRows.length;
+        elMatchCount.textContent = q.length > 0
+          ? shown.toLocaleString() + ' of ' + total.toLocaleString() + ' entries'
+          : total.toLocaleString() + ' entries';
+
+        if (shown === 0 && total > 0) {
+          elEmptyDesc.textContent = 'No entries match "' + state.query.trim() + '".';
+          elEmptyPanel.classList.add('is-visible');
+          elVirtualScroll.style.display = 'none';
+        } else if (total === 0) {
+          elEmptyDesc.textContent = 'This archive contains no file entries.';
+          elEmptyPanel.classList.add('is-visible');
+          elVirtualScroll.style.display = 'none';
+        } else {
+          elEmptyPanel.classList.remove('is-visible');
+          elVirtualScroll.style.display = 'block';
+        }
+
+        elVirtualSpacer.style.height = (shown * ROW_HEIGHT) + 'px';
+        renderVirtualWindow();
+      }
+
+      function renderVirtualWindow() {
+        const rows = state.visibleRows;
+        if (!rows.length) {
+          elVirtualRows.innerHTML = '';
+          return;
+        }
+        const scrollTop = elVirtualScroll.scrollTop;
+        const viewportH = elVirtualScroll.clientHeight || 600;
+        const overscan = 10;
+        const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - overscan);
+        const endIdx = Math.min(rows.length, Math.ceil((scrollTop + viewportH) / ROW_HEIGHT) + overscan);
+
+        elVirtualRows.style.transform = 'translateY(' + (startIdx * ROW_HEIGHT) + 'px)';
+
+        const isTreeActive = state.viewMode === 'tree' && state.query.trim().length === 0;
+        const repackAllowed = isRepackSupported();
+        const htmlParts = [];
+
+        for (let i = startIdx; i < endIdx; i++) {
+          const item = rows[i];
+          const isDir = item.type === 'dir';
+          const indentPx = isTreeActive ? item.depth * 18 : 0;
+          const labelText = isTreeActive ? item.name : item.path;
+          const expanded = isDir && state.expandedDirs.has(item.path);
+          const rep = state.replacements.get(item.path);
+          const isTrayPng = item.type === 'file' && item.name.toLowerCase().endsWith('.png') &&
+            (item.name.startsWith('trayIcon') || item.name.startsWith('trayUnreadIcon'));
+
+          let toggleHtml = '';
+          if (isTreeActive) {
+            toggleHtml = isDir
+              ? '<button type="button" class="tree-toggle" data-toggle="' + escapeHtml(item.path) + '" aria-label="' + (expanded ? 'Collapse ' : 'Expand ') + escapeHtml(item.name) + '">' + chevronSvg(expanded) + '</button>'
+              : '<span class="tree-spacer" aria-hidden="true"></span>';
+          }
+
+          const targetHtml = item.type === 'symlink' && item.target
+            ? '<span class="symlink-target" title="' + escapeHtml(item.target) + '">-&gt; ' + escapeHtml(item.target) + '</span>'
+            : '';
+
+          const trayTagHtml = isTrayPng && !rep
+            ? '<span class="tray-match-tag">tray match</span>'
+            : '';
+
+          const displaySize = rep ? rep.bytes.length : item.size;
+          const sizeStr = isDir
+            ? (item.isAsar && item.size > 0 ? formatBytes(item.size) : '—')
+            : formatBytes(displaySize);
+
+          let actionsHtml = '';
+          if (repackAllowed && item.type === 'file') {
+            if (rep) {
+              actionsHtml =
+                '<span class="modified-tag">Patched</span>' +
+                '<button type="button" class="row-action-btn is-visible" data-revert-path="' + escapeHtml(item.path) + '">Revert</button>';
+            } else {
+              actionsHtml =
+                '<button type="button" class="row-action-btn" data-replace-path="' + escapeHtml(item.path) + '">Replace</button>';
+            }
+          }
+
+          htmlParts.push(
+            '<div class="file-row' + (isDir ? ' is-dir' : '') + '" data-path="' + escapeHtml(item.path) + '" data-dir="' + (isDir ? '1' : '0') + '">' +
+              '<div class="cell-name" style="padding-left:' + indentPx + 'px">' +
+                toggleHtml +
+                rowIconSvg(item.type) +
+                '<span class="entry-label" title="' + escapeHtml(item.path) + '">' + escapeHtml(labelText) + '</span>' +
+                targetHtml +
+                trayTagHtml +
+              '</div>' +
+              '<div class="cell-type">' + typeLabel(item) + '</div>' +
+              '<div class="cell-size">' + sizeStr + '</div>' +
+              '<div class="cell-actions">' + actionsHtml + '</div>' +
+            '</div>'
+          );
+        }
+
+        elVirtualRows.innerHTML = htmlParts.join('');
+      }
+
+      function toggleDirectory(path) {
+        if (state.expandedDirs.has(path)) {
+          state.expandedDirs.delete(path);
+        } else {
+          state.expandedDirs.add(path);
+        }
+        computeVisibleRows();
+      }
+
+      async function handleFile(file) {
+        if (!file) return;
+
+        // Abort any in-flight background build from a previous file
+        state.buildGen++;
+        state.isRepacking = false;
+        state.readyBlob = null;
+        state.readyFileName = null;
+        state.downloadWhenReady = false;
+
+        elLanding.classList.add('is-hidden');
+        elWorkspace.classList.add('is-visible');
+        elErrorBox.classList.remove('is-visible');
+        elErrorBox.textContent = '';
+        elPatcherPanel.hidden = true;
+        elPatcherStatus.hidden = true;
+        setPatcherProgress(false);
+        elRepackBtn.hidden = true;
+        elInspectBar.hidden = true;
+        elToolbar.style.display = 'none';
+        elTableShell.style.display = 'flex';
+        elVirtualScroll.style.display = 'none';
+        elEmptyPanel.classList.remove('is-visible');
+        elLoadingPanel.classList.add('is-visible');
+        elLoadingText.textContent = 'Reading archive structure...';
+
+        elFileTitle.textContent = file.name;
+        elFileMeta.innerHTML = '<span>' + formatBytes(file.size) + '</span>';
+
+        revokeTrayPreviewUrls();
+        state.allEntries = [];
+        state.entryByPath = new Map();
+        state.childrenMap = new Map();
+        state.expandedDirs = new Set();
+        state.visibleRows = [];
+        state.query = '';
+        state.showFileInspector = false;
+        state.sourceFile = file;
+        state.sourceReader = null;
+        state.detectedType = null;
+        state.sqfsModel = null;
+        state.standaloneAsar = null;
+        state.replacements = new Map();
+        state.trayIconTargets = [];
+        state.trayUnreadIconTargets = [];
+        state.trayUploads = { trayIcon: null, trayUnreadIcon: null };
+        state.showMatchedPaths = false;
+        elSearchInput.value = '';
+        elVirtualScroll.scrollTop = 0;
+
+        try {
+          const reader = new BlobReader(file);
+          state.sourceReader = reader;
+          const detected = await detectAppImageFormat(reader);
+          state.detectedType = detected.type;
+          const appType = detected.type === 'asar'
+            ? 'ASAR Archive'
+            : detected.type === 'squashfs'
+              ? (detected.isElf ? 'AppImage Type 2' : 'SquashFS Image')
+              : (detected.isElf ? 'AppImage Type 1' : 'ISO 9660 Image');
+
+          const onProgress = (count) => {
+            elLoadingText.textContent = 'Indexing entries (' + count.toLocaleString() + ')...';
+          };
+
+          let result;
+          if (detected.type === 'asar') {
+            result = await parseAsarEntries((off, len) => reader.read(off, len), reader.size, '', 0, '');
+            state.standaloneAsar = {
+              manifest: result.manifest,
+              headerTotalSize: result.headerTotalSize,
+              hasIntegrity: result.hasIntegrity
+            };
+          } else if (detected.type === 'squashfs') {
+            result = await parseSquashFS(reader, detected.offset, onProgress);
+            state.sqfsModel = result.sqfsModel;
+          } else {
+            result = await parseIso9660(reader, detected.offset, onProgress);
+          }
+
+          let fileCount = 0;
+          let dirCount = 0;
+          for (const entry of result.entries) {
+            if (entry.type === 'dir') dirCount++;
+            else fileCount++;
+          }
+
+          const sortedFlat = result.entries.slice().sort((a, b) =>
+            a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' })
+          );
+
+          state.allEntries = sortedFlat;
+          buildTreeIndex(sortedFlat);
+          scanTrayIconTargets(sortedFlat);
+          applyDefaultTrayIcons();
+
+          const metaParts = [
+            '<span>' + escapeHtml(appType) + '</span>',
+            '<span>' + escapeHtml(result.formatLabel) + '</span>'
+          ];
+          if (result.asarCount > 0) {
+            metaParts.push('<span>' + result.asarCount.toLocaleString() + (result.asarCount === 1 ? ' ASAR' : ' ASARs') + '</span>');
+          }
+          metaParts.push(
+            '<span>' + fileCount.toLocaleString() + ' files</span>',
+            '<span>' + dirCount.toLocaleString() + ' folders</span>',
+            '<span>' + formatBytes(file.size) + '</span>'
+          );
+          elFileMeta.innerHTML = metaParts.join('<span class="ws-meta-sep" aria-hidden="true">&middot;</span>');
+
+          elLoadingPanel.classList.remove('is-visible');
+          computeVisibleRows();
+
+          // Hide full file list & toolbar by default; expose via "Inspect files"
+          elInspectBar.hidden = false;
+          state.showFileInspector = false;
+          applyFileInspectorVisibility();
+
+          renderPatcherPanel();
+
+          // Start building the patched archive immediately with the default tray icons
+          if (isRepackSupported() && (state.trayIconTargets.length > 0 || state.trayUnreadIconTargets.length > 0)) {
+            scheduleBuildPatchedArchive(false);
+          }
+        } catch (err) {
+          elLoadingPanel.classList.remove('is-visible');
+          elTableShell.style.display = 'none';
+          elToolbar.style.display = 'none';
+          elInspectBar.hidden = true;
+          elPatcherPanel.hidden = true;
+          elRepackBtn.hidden = true;
+          elErrorBox.textContent = err && err.message ? err.message : 'Unable to parse this file as an AppImage or ASAR archive.';
+          elErrorBox.classList.add('is-visible');
+        }
+      }
+
+      // Event wiring
+      elUploadBtn.addEventListener('click', () => {
+        elFileInput.value = '';
+        elFileInput.click();
+      });
+
+      elReloadBtn.addEventListener('click', () => {
+        elFileInput.value = '';
+        elFileInput.click();
+      });
+
+      elRepackBtn.addEventListener('click', () => {
+        handleSaveOrRepackClick();
+      });
+
+      elInspectFilesBtn.addEventListener('click', () => {
+        state.showFileInspector = !state.showFileInspector;
+        applyFileInspectorVisibility();
+      });
+
+      elFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) handleFile(file);
+      });
+
+      elTrayIconInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) applyTrayReplacement('trayIcon', file);
+      });
+
+      elTrayUnreadIconInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) applyTrayReplacement('trayUnreadIcon', file);
+      });
+
+      elGenericReplaceInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        const targetPath = state.pendingGenericTargetPath;
+        state.pendingGenericTargetPath = null;
+        if (!file || !targetPath) return;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        state.replacements.set(targetPath, {
+          bytes,
+          sourceName: file.name,
+          kind: 'manual'
+        });
+        renderPatcherPanel();
+        renderVirtualWindow();
+        scheduleBuildPatchedArchive(false);
+      });
+
+      elToggleMatchedPathsBtn.addEventListener('click', () => {
+        state.showMatchedPaths = !state.showMatchedPaths;
+        renderPatcherPanel();
+      });
+
+      elPatcherGrid.addEventListener('click', (e) => {
+        const pickBtn = e.target.closest('[data-pick-tray]');
+        if (pickBtn) {
+          const kind = pickBtn.dataset.pickTray;
+          if (kind === 'trayIcon') {
+            elTrayIconInput.value = '';
+            elTrayIconInput.click();
+          } else if (kind === 'trayUnreadIcon') {
+            elTrayUnreadIconInput.value = '';
+            elTrayUnreadIconInput.click();
+          }
+          return;
+        }
+        const resetBtn = e.target.closest('[data-reset-tray]');
+        if (resetBtn) {
+          resetTrayToDefault(resetBtn.dataset.resetTray);
+        }
+      });
+
+      // Drag-and-drop directly onto tray icon cards
+      elPatcherGrid.addEventListener('dragover', (e) => {
+        const card = e.target.closest('[data-tray-card]');
+        if (!card) return;
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.add('is-dragover');
+      });
+
+      elPatcherGrid.addEventListener('dragleave', (e) => {
+        const card = e.target.closest('[data-tray-card]');
+        if (!card) return;
+        card.classList.remove('is-dragover');
+      });
+
+      elPatcherGrid.addEventListener('drop', (e) => {
+        const card = e.target.closest('[data-tray-card]');
+        if (!card) return;
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('is-dragover');
+        state.dragCounter = 0;
+        elDropOverlay.classList.remove('is-active');
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) {
+          applyTrayReplacement(card.dataset.trayCard, file);
+        }
+      });
+
+      elSearchInput.addEventListener('input', (e) => {
+        state.query = e.target.value;
+        elVirtualScroll.scrollTop = 0;
+        computeVisibleRows();
+      });
+
+      elModeTreeBtn.addEventListener('click', () => {
+        if (state.viewMode === 'tree') return;
+        state.viewMode = 'tree';
+        elModeTreeBtn.classList.add('is-active');
+        elModeListBtn.classList.remove('is-active');
+        elVirtualScroll.scrollTop = 0;
+        computeVisibleRows();
+      });
+
+      elModeListBtn.addEventListener('click', () => {
+        if (state.viewMode === 'list') return;
+        state.viewMode = 'list';
+        elModeListBtn.classList.add('is-active');
+        elModeTreeBtn.classList.remove('is-active');
+        elVirtualScroll.scrollTop = 0;
+        computeVisibleRows();
+      });
+
+      elVirtualScroll.addEventListener('scroll', renderVirtualWindow, { passive: true });
+
+      elVirtualRows.addEventListener('click', (e) => {
+        const replaceBtn = e.target.closest('[data-replace-path]');
+        if (replaceBtn) {
+          e.stopPropagation();
+          state.pendingGenericTargetPath = replaceBtn.dataset.replacePath;
+          elGenericReplaceInput.value = '';
+          elGenericReplaceInput.click();
+          return;
+        }
+        const revertBtn = e.target.closest('[data-revert-path]');
+        if (revertBtn) {
+          e.stopPropagation();
+          state.replacements.delete(revertBtn.dataset.revertPath);
+          renderPatcherPanel();
+          renderVirtualWindow();
+          scheduleBuildPatchedArchive(false);
+          return;
+        }
+        if (state.viewMode !== 'tree' || state.query.trim().length > 0) return;
+        const row = e.target.closest('.file-row');
+        if (!row || row.dataset.dir !== '1') return;
+        toggleDirectory(row.dataset.path);
+      });
+
+      // Full-page drag-and-drop
+      window.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+        e.preventDefault();
+        state.dragCounter++;
+        elDropOverlay.classList.add('is-active');
+      });
+
+      window.addEventListener('dragover', (e) => {
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+
+      window.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        state.dragCounter = Math.max(0, state.dragCounter - 1);
+        if (state.dragCounter === 0) {
+          elDropOverlay.classList.remove('is-active');
+        }
+      });
+
+      window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        state.dragCounter = 0;
+        elDropOverlay.classList.remove('is-active');
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+    })();
+  </script>
+</body>
+</html>
