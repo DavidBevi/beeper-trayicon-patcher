@@ -1,18 +1,18 @@
 # beeper-trayicon-patcher<br><sub><sup>A script to customize the systray icons of Beeper AppImage (Linux)</sup></sub>
 
-| | SHELL SCRIPT version (`.sh`, man-made) | WEB PAGE version (`.html`, AI-made) |
-|-|-|-|
-| Requires | - installing [`asar`](https://github.com/electron/asar)<br>- running a command which downloads and launches the guided installer | - [going to the webpage](https://davidbevi.github.io/beeper-trayicon-patcher)<br>- following instructions |
-| Time to patch | ~1 minute | ~3 seconds |
-| Patches offline | Yes | Yes |
-| Loads offline | Yes, once you download the script and required files | Yes, if you save the [html page](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html) (it's self sufficient) |
-| Notes | Offers a CLI interface with many options, code is shorter and easier to inspect | The patched AppImage requires you to give it executable permission (`chmod +x`) |
+| SHELL SCRIPT version (`.sh`, man-made) | WEB PAGE version (`.html`, AI-made) |
+|-|-|
+| Requires<br>- installing [`asar`](https://github.com/electron/asar)<br>- running a command to download and launch installer | Requires <br>- [going to the webpage](https://davidbevi.github.io/beeper-trayicon-patcher)<br>- following instructions |
+| Patching takes ~1 minute | Patching takes ~3 seconds |
+| Patches offline | Patches offline |
+| Loads offline once you download the script and required files | Loads offline if you save the [html page](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html) (it's self sufficient) |
+| NOTE: it offers a CLI interface with many options, its code is shorter and easier to inspect | NOTE: the patched AppImage requires you to give it executable permission (`chmod +x`) |
 
 ## Installing the script
 - **PREP**: install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
 - **AUTO-INSTALL**: open a CLI in the working dir of your choice, then launch the guided installer with `curl -O https://raw.githubusercontent.com/DavidBevi/beeper-trayicon-patcher/refs/heads/main/beeper-trayicon-patcher.sh && source beeper-trayicon-patcher.sh install`
 
-<details><summary>Or install manually</summary>
+<details><summary>— or click here to show manual installation steps —</summary>
 
 Put in a directory of your choice:
 - `Beeper*.AppImage` from your PC or from [`[beeper.com]`](https://beeper.com)
