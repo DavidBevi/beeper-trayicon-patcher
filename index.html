@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppImage trayIcon patcher</title>
-  <meta name="description" content="Load your AppImage and replace tray icons, all locally. -- Made for Beeper, probably compatible with any Electron AppImage " />
-  <meta property="og:title" content="AppImage trayIcon patcher" />
-  <meta property="og:description" content="Load your AppImage and replace tray icons, all locally. -- Made for Beeper, probably compatible with any Electron AppImage " />
+  <title>beeper-trayicon-patcher</title>
+  <meta name="color-scheme" content="dark" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';" />
+  <meta name="description" content="Load your Beeper AppImage and replace tray icons locally in your browser." />
+  <meta property="og:title" content="beeper-trayicon-patcher" />
+  <meta property="og:description" content="Load your Beeper AppImage and replace tray icons locally in your browser." />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADsAAAA7AF5KHG9AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAkpJREFUWIXFl0lrFUEUhc9rVJxQBMWYnYkGBSdw4YA4gC6zcuVP8Ac47PwFDjEBkyAu3SkaBHcudGEEB0REo+BCERQ18WkeDiifNFSH+8qu7n6v++VduPSl+tY5p6qr7qVrgLppUVfZVUzAEUljkp5Lqksix+sud1TS4Vx0IORbgXuUt7vAlhBPLXAGBiVdlbTcjL2R9FJSI2dNyyRtlrTejM1KOibpVpEd2Av8NCu4AWzL2KmQ7wAmDM4PYLefJ29gKfDOTDrRBrHvpwzeW2BJloDTJnmoAvLERwzuySwBUy7pM7CiQgErgS8O+4V9F5njsEHSgIuvSfqm6iy+mtddvElSX/IiMklzg5IeqHqbNHF/moBVJp7pgIDpNK7IDH4y8ZoOCFhr4o9pAl65Uhrb/g4I2OeeMcfruVGaT+tjd1JngXUV3oJe4LvDvh+6BXINJCmnw5JqKm8xxyVT1seb3tKsdAHwzBSNUWBhydWfN3gPgSirEAnYCEybSU+Bo34JLehnDU6MOeDnKDBxp9cTcA1qyq0i8f+ai/FzZm4DOJCWpwyAHuAK8Jew9aTMi1v8BZMTH+hDIR4V2MY+1xVvAo+APw74fYB8yCNPXXkrAmR8MfDbgU/kkDeyVt6ugF2G4IxHfrHotpcRcNyQDBryYY/8YFFMtSjgsiHqdeQj7ZK3IyAp1R8C5JkHrqyARcAvR3YbGDfkdWBPq+StClhtCJPGEtvXnIJU6Sd4QrPNuJuh+RLQD9xxn2IS2F6GPPbQn9G8Wdf/jv8BxNQ7ix5zWQ4AAAAASUVORK5CYII=" />
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAADsAAAA7AF5KHG9AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAkpJREFUWIXFl0lrFUEUhc9rVJxQBMWYnYkGBSdw4YA4gC6zcuVP8Ac47PwFDjEBkyAu3SkaBHcudGEEB0REo+BCERQ18WkeDiifNFSH+8qu7n6v++VduPSl+tY5p6qr7qVrgLppUVfZVUzAEUljkp5Lqksix+sud1TS4Vx0IORbgXuUt7vAlhBPLXAGBiVdlbTcjL2R9FJSI2dNyyRtlrTejM1KOibpVpEd2Av8NCu4AWzL2KmQ7wAmDM4PYLefJ29gKfDOTDrRBrHvpwzeW2BJloDTJnmoAvLERwzuySwBUy7pM7CiQgErgS8O+4V9F5njsEHSgIuvSfqm6iy+mtddvElSX/IiMklzg5IeqHqbNHF/moBVJp7pgIDpNK7IDH4y8ZoOCFhr4o9pAl65Uhrb/g4I2OeeMcfruVGaT+tjd1JngXUV3oJe4LvDvh+6BXINJCmnw5JqKm8xxyVT1seb3tKsdAHwzBSNUWBhydWfN3gPgSirEAnYCEybSU+Bo34JLehnDU6MOeDnKDBxp9cTcA1qyq0i8f+ai/FzZm4DOJCWpwyAHuAK8Jew9aTMi1v8BZMTH+hDIR4V2MY+1xVvAo+APw74fYB8yCNPXXkrAmR8MfDbgU/kkDeyVt6ugF2G4IxHfrHotpcRcNyQDBryYY/8YFFMtSjgsiHqdeQj7ZK3IyAp1R8C5JkHrqyARcAvR3YbGDfkdWBPq+StClhtCJPGEtvXnIJU6Sd4QrPNuJuh+RLQD9xxn2IS2F6GPPbQn9G8Wdf/jv8BxNQ7ix5zWQ4AAAAASUVORK5CYII=" />
   <style>
     :root {
+      color-scheme: dark;
       --bg: #0b0d12;
       --surface: #11151d;
       --surface-hover: #171c27;
@@ -17,16 +22,19 @@
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
       --text: #f1f5f9;
-      --text-muted: #8b95a7;
-      --text-dim: #5d677a;
+      --text-muted: #9ba6b8;
+      --text-dim: #7e8aa0;
       --accent: #3b82f6;
       --accent-hover: #2563eb;
       --accent-ring: rgba(59, 130, 246, 0.45);
+      --warn: #fbbf24;
+      --warn-bg: rgba(251, 191, 36, 0.08);
+      --warn-border: rgba(251, 191, 36, 0.28);
       --danger: #f87171;
       --danger-bg: rgba(248, 113, 113, 0.08);
       --danger-border: rgba(248, 113, 113, 0.25);
-      --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -147,7 +155,7 @@
 
     .drop-overlay.is-active {
       opacity: 1;
-      pointer-events: auto;
+      pointer-events: none;
     }
 
     .drop-frame {
@@ -930,6 +938,97 @@
       display: none;
     }
 
+    .patcher-card-warn {
+      font-size: 0.72rem;
+      color: var(--warn);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .patcher-notice {
+      padding: 10px 12px;
+      background-color: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 8px;
+      color: var(--warn);
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .patcher-notice[hidden] {
+      display: none;
+    }
+
+    .patcher-caveat {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    .chmod-box {
+      padding: 12px 14px;
+      background-color: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chmod-box[hidden] {
+      display: none;
+    }
+
+    .chmod-title {
+      font-size: 0.8125rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .chmod-cmd-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chmod-code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: #4ade80;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .app-footer {
+      margin-top: auto;
+      padding-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .app-footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    .app-footer a:hover {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition-duration: 0.01ms !important;
@@ -939,28 +1038,33 @@
   </style>
 </head>
 <body>
-  <input type="file" id="fileInput" accept=".AppImage,.appimage,.asar,*" hidden />
+  <input type="file" id="fileInput" accept=".AppImage,.appimage,.asar" hidden />
   <input type="file" id="trayIconInput" accept="image/png,.png" hidden />
   <input type="file" id="trayUnreadIconInput" accept="image/png,.png" hidden />
   <input type="file" id="genericReplaceInput" hidden />
 
   <main id="landing" class="landing">
     <div class="landing-inner">
-      <h1 class="title">AppImage trayIcon patcher</h1>
-      <p class="subtitle">Load your AppImage and replace tray icons, all locally. -- Made for Beeper, probably compatible with any Electron AppImage </p>
+      <h1 class="title">beeper-trayicon-patcher</h1>
+      <p class="subtitle">Load your AppImage and replace tray icons, <em>locally</em></p>
       <button type="button" id="uploadBtn" class="upload-btn">Select File</button>
-      <p class="hint">or drag and drop an .AppImage or .asar file anywhere on this page</p>
+      <p class="hint">or drag and drop Beeper.AppImage anywhere on this page</p>
+      <footer class="app-footer" aria-label="Project metadata">
+        <span>v1.1.0</span>
+        <span aria-hidden="true">&middot;</span>
+        <a href="https://github.com/DavidBevi/beeper-trayicon-patcher" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+      </footer>
     </div>
   </main>
 
-  <section id="workspace" class="workspace" aria-live="polite">
+  <section id="workspace" class="workspace">
     <header class="ws-header">
       <div class="ws-title-group">
         <h1 id="fileTitle" class="ws-filename"></h1>
         <p id="fileMeta" class="ws-meta"></p>
       </div>
       <div class="ws-actions">
-        <button type="button" id="repackBtn" class="primary-btn" hidden>Repack &amp; Download</button>
+        <button type="button" id="repackBtn" class="primary-btn" hidden>Patch &amp; Download</button>
         <button type="button" id="reloadBtn" class="secondary-btn">Load another</button>
       </div>
     </header>
@@ -978,6 +1082,8 @@
         </div>
       </div>
 
+      <div id="patcherNotice" class="patcher-notice" hidden role="status"></div>
+
       <div id="patcherPathsBox" class="patcher-paths-box" hidden></div>
 
       <div id="patcherGrid" class="patcher-grid"></div>
@@ -987,12 +1093,22 @@
           <span id="patcherProgressLabel">Preparing...</span>
           <span id="patcherProgressPct">0%</span>
         </div>
-        <div class="patcher-progress-track">
+        <div id="patcherProgressTrack" class="patcher-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="patcherProgressLabel">
           <div id="patcherProgressFill" class="patcher-progress-fill"></div>
         </div>
       </div>
 
-      <div id="patcherStatus" class="patcher-status" hidden></div>
+      <div id="patcherStatus" class="patcher-status" hidden aria-live="polite"></div>
+
+      <div id="chmodBox" class="chmod-box" hidden>
+        <div class="chmod-title">On Linux, make the patched AppImage executable before launching:</div>
+        <div class="chmod-cmd-row">
+          <code id="chmodCode" class="chmod-code"></code>
+          <button type="button" id="copyChmodBtn" class="patcher-card-btn">Copy command</button>
+        </div>
+      </div>
+
+      <p id="patcherCaveat" class="patcher-caveat" hidden></p>
     </section>
 
     <div id="inspectBar" class="inspect-bar" hidden>
@@ -1040,11 +1156,17 @@
         </div>
       </div>
     </div>
+
+    <footer class="app-footer" aria-label="Project metadata">
+      <span>beeper-trayicon-patcher v1.1.0</span>
+      <span aria-hidden="true">&middot;</span>
+      <a href="https://github.com/DavidBevi/beeper-trayicon-patcher" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+    </footer>
   </section>
 
   <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
     <div class="drop-frame">
-      <p class="drop-label">Drop AppImage or .asar to inspect</p>
+      <p id="dropLabel" class="drop-label">Drop Beeper.AppImage or .asar here</p>
     </div>
   </div>
 
@@ -1138,18 +1260,155 @@
 
       const canCompressDeflate = typeof CompressionStream !== 'undefined';
 
+      function requireCompressDeflate() {
+        if (!canCompressDeflate) {
+          throw new Error('This browser does not support CompressionStream("deflate"), which is required to repack SquashFS blocks cleanly.');
+        }
+      }
+
       async function compressZlib(bytes) {
-        if (!canCompressDeflate || !bytes || bytes.length === 0) {
+        if (!canCompressDeflate) {
+          throw new Error('CompressionStream("deflate") is unavailable in this browser.');
+        }
+        if (!bytes || bytes.length === 0) {
           return null;
         }
-        try {
-          const cs = new CompressionStream('deflate');
-          const stream = new Blob([bytes]).stream().pipeThrough(cs);
-          const buf = await new Response(stream).arrayBuffer();
-          return new Uint8Array(buf);
-        } catch (_) {
-          return null;
+        const cs = new CompressionStream('deflate');
+        const stream = new Blob([bytes]).stream().pipeThrough(cs);
+        const buf = await new Response(stream).arrayBuffer();
+        return new Uint8Array(buf);
+      }
+
+      const CRC32_TABLE = (() => {
+        const t = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+          let c = i;
+          for (let k = 0; k < 8; k++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          }
+          t[i] = c >>> 0;
         }
+        return t;
+      })();
+
+      function crc32(bytes, start = 0, end = bytes.length) {
+        let crc = 0xFFFFFFFF;
+        for (let i = start; i < end; i++) {
+          crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+      }
+
+      const CRC64_TABLE = (() => {
+        const t = [];
+        const poly = 0xC96C5795D7870F42n;
+        for (let i = 0; i < 256; i++) {
+          let c = BigInt(i);
+          for (let k = 0; k < 8; k++) {
+            c = (c & 1n) ? ((c >> 1n) ^ poly) : (c >> 1n);
+          }
+          t.push(c);
+        }
+        return t;
+      })();
+
+      function crc64(bytes, start = 0, end = bytes.length) {
+        let crc = 0xFFFFFFFFFFFFFFFFn;
+        for (let i = start; i < end; i++) {
+          const idx = Number((crc ^ BigInt(bytes[i])) & 0xFFn);
+          crc = CRC64_TABLE[idx] ^ (crc >> 8n);
+        }
+        return crc ^ 0xFFFFFFFFFFFFFFFFn;
+      }
+
+      function parsePngInfo(bytes) {
+        if (!bytes || bytes.length < 24 ||
+            bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4E || bytes[3] !== 0x47 ||
+            bytes[4] !== 0x0D || bytes[5] !== 0x0A || bytes[6] !== 0x1A || bytes[7] !== 0x0A) {
+          throw new Error('Selected file is not a valid PNG image (invalid PNG signature).');
+        }
+        const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        const ihdrLen = dv.getUint32(8, false);
+        if (ihdrLen !== 13 ||
+            bytes[12] !== 0x49 || bytes[13] !== 0x48 || bytes[14] !== 0x44 || bytes[15] !== 0x52) {
+          throw new Error('Selected file is not a valid PNG image (missing IHDR chunk).');
+        }
+        const width = dv.getUint32(16, false);
+        const height = dv.getUint32(20, false);
+        if (width === 0 || height === 0) {
+          throw new Error('Selected PNG has invalid dimensions (0 px).');
+        }
+        return { width, height };
+      }
+
+      function createStoredZipBlob(fileEntries) {
+        const localParts = [];
+        const centralParts = [];
+        let localOffset = 0;
+
+        for (const item of fileEntries) {
+          const nameBytes = utf8Encoder.encode(item.path);
+          const dataBytes = item.bytes;
+          const fileCrc = crc32(dataBytes);
+          const size = dataBytes.length;
+
+          const lfh = new Uint8Array(30 + nameBytes.length);
+          const ldv = new DataView(lfh.buffer);
+          ldv.setUint32(0, 0x04034b50, true);
+          ldv.setUint16(4, 20, true);
+          ldv.setUint16(6, 0x0800, true);
+          ldv.setUint16(8, 0, true);
+          ldv.setUint16(10, 0, true);
+          ldv.setUint16(12, 0x5421, true);
+          ldv.setUint32(14, fileCrc, true);
+          ldv.setUint32(18, size, true);
+          ldv.setUint32(22, size, true);
+          ldv.setUint16(26, nameBytes.length, true);
+          ldv.setUint16(28, 0, true);
+          lfh.set(nameBytes, 30);
+          localParts.push(lfh, dataBytes);
+
+          const cdfh = new Uint8Array(46 + nameBytes.length);
+          const cdv = new DataView(cdfh.buffer);
+          const unixMode = (item.executable ? 0o100755 : 0o100644) << 16;
+          cdv.setUint32(0, 0x02014b50, true);
+          cdv.setUint16(4, 0x0314, true);
+          cdv.setUint16(6, 20, true);
+          cdv.setUint16(8, 0x0800, true);
+          cdv.setUint16(10, 0, true);
+          cdv.setUint16(12, 0, true);
+          cdv.setUint16(14, 0x5421, true);
+          cdv.setUint32(16, fileCrc, true);
+          cdv.setUint32(20, size, true);
+          cdv.setUint32(24, size, true);
+          cdv.setUint16(28, nameBytes.length, true);
+          cdv.setUint16(30, 0, true);
+          cdv.setUint16(32, 0, true);
+          cdv.setUint16(34, 0, true);
+          cdv.setUint16(36, 0, true);
+          cdv.setUint32(38, unixMode >>> 0, true);
+          cdv.setUint32(42, localOffset >>> 0, true);
+          cdfh.set(nameBytes, 46);
+          centralParts.push(cdfh);
+
+          localOffset += lfh.length + size;
+        }
+
+        let centralSize = 0;
+        for (const cp of centralParts) centralSize += cp.length;
+
+        const eocd = new Uint8Array(22);
+        const edv = new DataView(eocd.buffer);
+        edv.setUint32(0, 0x06054b50, true);
+        edv.setUint16(4, 0, true);
+        edv.setUint16(6, 0, true);
+        edv.setUint16(8, fileEntries.length, true);
+        edv.setUint16(10, fileEntries.length, true);
+        edv.setUint32(12, centralSize >>> 0, true);
+        edv.setUint32(16, localOffset >>> 0, true);
+        edv.setUint16(20, 0, true);
+
+        return new Blob([...localParts, ...centralParts, eocd], { type: 'application/zip' });
       }
 
       function bytesToHex(bytes) {
@@ -1464,10 +1723,14 @@
 
         let pos = start;
         let totalProduced = 0;
+        let endedNormally = false;
 
         while (pos < end) {
           const ctrl = src[pos++];
-          if (ctrl === 0x00) break;
+          if (ctrl === 0x00) {
+            endedNormally = true;
+            break;
+          }
 
           if (ctrl === 0x01 || ctrl === 0x02) {
             if (ctrl === 0x01) {
@@ -1631,13 +1894,17 @@
           totalProduced += uLen;
         }
 
+        if (!endedNormally) {
+          throw new Error('Truncated LZMA2 stream (missing end-of-payload marker).');
+        }
+
         const result = new Uint8Array(totalProduced);
         let offset = 0;
         for (const c of chunks) {
           result.set(c, offset);
           offset += c.length;
         }
-        return result;
+        return { data: result, bytesConsumed: pos - start };
       }
 
       // BCJ inverse filters for XZ
@@ -1748,12 +2015,26 @@
           throw new Error('Invalid XZ stream header.');
         }
 
+        if (buf[6] !== 0x00 || (buf[7] & 0xF0) !== 0x00) {
+          throw new Error('Unsupported XZ stream flags.');
+        }
+
+        const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+        const hdrCrc = dv.getUint32(8, true);
+        if (crc32(buf, 6, 8) !== hdrCrc) {
+          throw new Error('Corrupt XZ stream header CRC32.');
+        }
+
         const checkType = buf[7] & 0x0F;
         const checkSizes = [0, 4, 4, 4, 8, 8, 8, 16, 16, 16, 32, 32, 32, 64, 64, 64];
         const checkSize = checkSizes[checkType] || 0;
+        if (checkType !== 0 && checkType !== 1 && checkType !== 4 && checkType !== 10) {
+          throw new Error('Unsupported XZ integrity check type: ' + checkType);
+        }
 
         let pos = 12;
         const blockOutputs = [];
+        const blockMeta = [];
         let totalLen = 0;
 
         while (pos < buf.length) {
@@ -1764,6 +2045,11 @@
           const headerSize = (headerSizeByte + 1) * 4;
           if (pos + headerSize > buf.length) throw new Error('Truncated XZ block header.');
 
+          const blockHdrCrc = dv.getUint32(pos + headerSize - 4, true);
+          if (crc32(buf, pos, pos + headerSize - 4) !== blockHdrCrc) {
+            throw new Error('Corrupt XZ block header CRC32.');
+          }
+
           const hState = { pos: pos + 1 };
           const flags = buf[hState.pos++];
           const hasCompSize = (flags & 0x40) !== 0;
@@ -1771,7 +2057,7 @@
           const numFilters = (flags & 0x03) + 1;
 
           const compSize = hasCompSize ? readXzVarint(buf, hState) : null;
-          if (hasUncompSize) readXzVarint(buf, hState);
+          const expectedUncompSize = hasUncompSize ? readXzVarint(buf, hState) : null;
 
           const filters = [];
           for (let f = 0; f < numFilters; f++) {
@@ -1790,8 +2076,15 @@
           const d = lzmaFilter.props[0] & 0x3F;
           const dictSize = d >= 40 ? 0xFFFFFFFF : ((2 | (d & 1)) << ((d >> 1) + 11));
 
-          const payloadEnd = compSize !== null ? pos + compSize : buf.length - 12 - checkSize;
-          let decoded = decodeLzma2Stream(buf, pos, payloadEnd, dictSize);
+          const payloadLimit = compSize !== null ? pos + compSize : buf.length - 12 - checkSize;
+          if (payloadLimit > buf.length) throw new Error('Truncated XZ block payload.');
+          const lzmaRes = decodeLzma2Stream(buf, pos, payloadLimit, dictSize);
+          const decoded = lzmaRes.data;
+          const actualCompSize = lzmaRes.bytesConsumed;
+
+          if (compSize !== null && actualCompSize !== compSize) {
+            throw new Error('XZ block compressed size mismatch (expected ' + compSize + ', got ' + actualCompSize + ').');
+          }
 
           // Apply remaining filters in reverse order (excluding LZMA2 at the end)
           for (let f = filters.length - 2; f >= 0; f--) {
@@ -1811,16 +2104,92 @@
             }
           }
 
-          blockOutputs.push(decoded);
-          totalLen += decoded.length;
-
-          if (compSize !== null) {
-            pos += compSize;
-            const pad = (4 - (compSize % 4)) % 4;
-            pos += pad + checkSize;
-          } else {
-            break;
+          if (expectedUncompSize !== null && decoded.length !== expectedUncompSize) {
+            throw new Error('XZ block uncompressed size mismatch (expected ' + expectedUncompSize + ', got ' + decoded.length + ').');
           }
+
+          const usedCompSize = compSize !== null ? compSize : actualCompSize;
+          const pad = (4 - (usedCompSize % 4)) % 4;
+          const checkOffset = pos + usedCompSize + pad;
+          if (checkOffset + checkSize > buf.length) {
+            throw new Error('Truncated XZ block integrity check.');
+          }
+          for (let p = 0; p < pad; p++) {
+            if (buf[pos + usedCompSize + p] !== 0) {
+              throw new Error('Corrupt XZ block padding.');
+            }
+          }
+
+          if (checkType === 1) {
+            const expectedCrc32 = dv.getUint32(checkOffset, true);
+            const actualCrc32 = crc32(decoded);
+            if (actualCrc32 !== expectedCrc32) {
+              throw new Error('XZ block CRC32 mismatch (corrupt compressed data).');
+            }
+          } else if (checkType === 4) {
+            const expectedCrc64 = dv.getBigUint64(checkOffset, true);
+            const actualCrc64 = crc64(decoded);
+            if (actualCrc64 !== expectedCrc64) {
+              throw new Error('XZ block CRC64 mismatch (corrupt compressed data).');
+            }
+          } else if (checkType === 10) {
+            const expectedHex = bytesToHex(buf.subarray(checkOffset, checkOffset + 32));
+            const actualHex = sha256Fallback(decoded);
+            if (actualHex !== expectedHex) {
+              throw new Error('XZ block SHA-256 mismatch (corrupt compressed data).');
+            }
+          }
+
+          blockOutputs.push(decoded);
+          blockMeta.push({
+            unpadded: headerSize + usedCompSize + checkSize,
+            uncomp: decoded.length
+          });
+          totalLen += decoded.length;
+          pos = checkOffset + checkSize;
+        }
+
+        // Validate Index & Stream Footer
+        if (pos + 12 <= buf.length && buf[pos] === 0x00) {
+          const footerOff = buf.length - 12;
+          if (buf[footerOff + 10] !== 0x59 || buf[footerOff + 11] !== 0x5A) {
+            throw new Error('Invalid XZ stream footer magic.');
+          }
+          if (buf[footerOff + 8] !== buf[6] || buf[footerOff + 9] !== buf[7]) {
+            throw new Error('XZ stream footer flags mismatch.');
+          }
+          const footerCrc = dv.getUint32(footerOff, true);
+          if (crc32(buf, footerOff + 4, footerOff + 10) !== footerCrc) {
+            throw new Error('Corrupt XZ stream footer CRC32.');
+          }
+          const backwardSize = (dv.getUint32(footerOff + 4, true) + 1) * 4;
+          const indexLen = footerOff - pos;
+          if (indexLen < 8 || indexLen !== backwardSize) {
+            throw new Error('XZ stream index size mismatch.');
+          }
+          const indexCrc = dv.getUint32(footerOff - 4, true);
+          if (crc32(buf, pos, footerOff - 4) !== indexCrc) {
+            throw new Error('Corrupt XZ stream index CRC32.');
+          }
+          const iState = { pos: pos + 1 };
+          const numRecords = readXzVarint(buf, iState);
+          if (numRecords !== blockMeta.length) {
+            throw new Error('XZ index record count mismatch.');
+          }
+          for (let r = 0; r < numRecords; r++) {
+            const idxUnpadded = readXzVarint(buf, iState);
+            const idxUncomp = readXzVarint(buf, iState);
+            if (idxUnpadded !== blockMeta[r].unpadded || idxUncomp !== blockMeta[r].uncomp) {
+              throw new Error('XZ index block size mismatch.');
+            }
+          }
+          while (iState.pos < footerOff - 4) {
+            if (buf[iState.pos++] !== 0x00) {
+              throw new Error('Corrupt XZ index padding.');
+            }
+          }
+        } else {
+          throw new Error('Truncated XZ stream (missing index/footer).');
         }
 
         if (blockOutputs.length === 1) return blockOutputs[0];
@@ -2041,6 +2410,7 @@
         let currentPackedOffset = 0;
         const packedChunks = [];
         const unpackedFilesToWrite = [];
+        let preExistingUnpackedCount = 0;
         let processedCount = 0;
 
         async function walkBuild(filesObj, parentRel, inUnpackedDir) {
@@ -2108,6 +2478,8 @@
                     bytes: origBytes,
                     executable: Boolean(node.executable)
                   });
+                } else {
+                  preExistingUnpackedCount++;
                 }
               } else {
                 outFile.offset = String(currentPackedOffset);
@@ -2145,7 +2517,8 @@
           headerBuf,
           packedChunks,
           totalSize,
-          unpackedFilesToWrite
+          unpackedFilesToWrite,
+          preExistingUnpackedCount
         };
       }
 
@@ -2613,6 +2986,9 @@
           }
 
           readSlice.ensureBlockList = ensureBlockList;
+          readSlice.clearCache = () => {
+            decompressedBlocks.clear();
+          };
           return readSlice;
         }
 
@@ -2779,6 +3155,9 @@
         }
 
         getPosition() {
+          if (this.uncompLen >= 8192) {
+            throw new Error('Internal SquashFS metadata block offset overflow (' + this.uncompLen + ').');
+          }
           return {
             relBlock: this.compressedSize,
             innerOffset: this.uncompLen
@@ -2818,6 +3197,9 @@
             this.uncompBuf.set(bytes.subarray(srcOff, srcOff + take), this.uncompLen);
             this.uncompLen += take;
             srcOff += take;
+            if (this.uncompLen === 8192) {
+              await this.flushBlock();
+            }
           }
         }
       }
@@ -2954,6 +3336,7 @@
         onProgress,
         shouldAbort
       }) {
+        requireCompressDeflate();
         const { sqfsOffset, blockSize, blockLog, compression, mkfsTime, ids, createFileReader } = sqfsModel;
         const root = cloneSqfsTree(sqfsModel.rootNode);
 
@@ -3037,7 +3420,40 @@
 
         // Output SquashFS parts; index 0 is 96-byte superblock placeholder
         const sqfsParts = [new Uint8Array(96)];
+        let memBatch = [];
+        let memBatchBytes = 0;
         let currentDiskOffset = 96;
+
+        function flushMemBatch() {
+          if (memBatch.length === 0) return;
+          sqfsParts.push(new Blob(memBatch));
+          memBatch = [];
+          memBatchBytes = 0;
+        }
+
+        function pushSqfsSlice(sliceBlob) {
+          flushMemBatch();
+          sqfsParts.push(sliceBlob);
+        }
+
+        async function writeCompressedSqfsBlock(raw, outBlockSizes) {
+          const comp = await compressZlib(raw);
+          if (comp && comp.length < raw.length) {
+            memBatch.push(comp);
+            memBatchBytes += comp.length;
+            outBlockSizes.push(comp.length);
+            currentDiskOffset += comp.length;
+          } else {
+            const ownedRaw = raw.slice();
+            memBatch.push(ownedRaw);
+            memBatchBytes += ownedRaw.length;
+            outBlockSizes.push(ownedRaw.length | 0x01000000);
+            currentDiskOffset += ownedRaw.length;
+          }
+          if (memBatchBytes >= 8 * 1024 * 1024) {
+            flushMemBatch();
+          }
+        }
 
         // 1. Write all file data blocks
         const totalFilesToPack = allFiles.length;
@@ -3054,16 +3470,7 @@
               const bytes = fnode.replacementBytes;
               for (let off = 0; off < bytes.length; off += blockSize) {
                 const raw = bytes.subarray(off, Math.min(bytes.length, off + blockSize));
-                const comp = await compressZlib(raw);
-                if (comp && comp.length < raw.length) {
-                  sqfsParts.push(comp);
-                  fnode.outBlockSizes.push(comp.length);
-                  currentDiskOffset += comp.length;
-                } else {
-                  sqfsParts.push(raw);
-                  fnode.outBlockSizes.push(raw.length | 0x01000000);
-                  currentDiskOffset += raw.length;
-                }
+                await writeCompressedSqfsBlock(raw, fnode.outBlockSizes);
               }
             } else if (fnode.asarStreamSource) {
               let remaining = fnode.size;
@@ -3073,16 +3480,7 @@
                 const raw = await fnode.asarStreamSource.readNextChunk(Math.min(blockSize, remaining));
                 if (!raw.length) break;
                 remaining -= raw.length;
-                const comp = await compressZlib(raw);
-                if (comp && comp.length < raw.length) {
-                  sqfsParts.push(comp);
-                  fnode.outBlockSizes.push(comp.length);
-                  currentDiskOffset += comp.length;
-                } else {
-                  sqfsParts.push(raw);
-                  fnode.outBlockSizes.push(raw.length | 0x01000000);
-                  currentDiskOffset += raw.length;
-                }
+                await writeCompressedSqfsBlock(raw, fnode.outBlockSizes);
                 blkIter++;
                 if (blkIter % 16 === 0) {
                   await new Promise((r) => setTimeout(r, 0));
@@ -3102,7 +3500,7 @@
                 }
                 if (info.totalDiskBytes > 0) {
                   const absStart = sqfsOffset + origInode.blocksStart;
-                  sqfsParts.push(reader.file.slice(absStart, absStart + info.totalDiskBytes));
+                  pushSqfsSlice(reader.file.slice(absStart, absStart + info.totalDiskBytes));
                   currentDiskOffset += info.totalDiskBytes;
                 }
               } else {
@@ -3112,21 +3510,13 @@
                   if (shouldAbort && shouldAbort()) throw new Error('__BUILD_ABORTED__');
                   const take = Math.min(blockSize, fnode.size - off);
                   const raw = await origFileReader(off, take);
-                  const comp = await compressZlib(raw);
-                  if (comp && comp.length < raw.length) {
-                    sqfsParts.push(comp);
-                    fnode.outBlockSizes.push(comp.length);
-                    currentDiskOffset += comp.length;
-                  } else {
-                    sqfsParts.push(raw);
-                    fnode.outBlockSizes.push(raw.length | 0x01000000);
-                    currentDiskOffset += raw.length;
-                  }
+                  await writeCompressedSqfsBlock(raw, fnode.outBlockSizes);
                   blkIter++;
                   if (blkIter % 8 === 0) {
                     await new Promise((r) => setTimeout(r, 0));
                   }
                 }
+                if (origFileReader.clearCache) origFileReader.clearCache();
               }
             }
           }
@@ -3136,6 +3526,7 @@
             await new Promise((r) => setTimeout(r, 0));
           }
         }
+        flushMemBatch();
 
         // 2. Write non-directory inodes into Inode Table
         const inodeWriter = new SquashfsMetaWriter();
@@ -3602,12 +3993,16 @@
           bytes: base64ToUint8Array(DEFAULT_TRAY_ICON_B64),
           fileName: 'trayIcon.png',
           previewUrl: 'data:image/png;base64,' + DEFAULT_TRAY_ICON_B64,
+          width: 32,
+          height: 32,
           isDefault: true
         },
         trayUnreadIcon: {
           bytes: base64ToUint8Array(DEFAULT_TRAY_UNREAD_ICON_B64),
           fileName: 'trayUnreadIcon.png',
           previewUrl: 'data:image/png;base64,' + DEFAULT_TRAY_UNREAD_ICON_B64,
+          width: 32,
+          height: 32,
           isDefault: true
         }
       };
@@ -3624,19 +4019,26 @@
       const elReloadBtn = document.getElementById('reloadBtn');
       const elRepackBtn = document.getElementById('repackBtn');
       const elDropOverlay = document.getElementById('dropOverlay');
+      const elDropLabel = document.getElementById('dropLabel');
       const elFileTitle = document.getElementById('fileTitle');
       const elFileMeta = document.getElementById('fileMeta');
       const elErrorBox = document.getElementById('errorBox');
       const elPatcherPanel = document.getElementById('patcherPanel');
       const elPatcherSummary = document.getElementById('patcherSummary');
+      const elPatcherNotice = document.getElementById('patcherNotice');
       const elToggleMatchedPathsBtn = document.getElementById('toggleMatchedPathsBtn');
       const elPatcherPathsBox = document.getElementById('patcherPathsBox');
       const elPatcherGrid = document.getElementById('patcherGrid');
       const elPatcherProgress = document.getElementById('patcherProgress');
       const elPatcherProgressLabel = document.getElementById('patcherProgressLabel');
       const elPatcherProgressPct = document.getElementById('patcherProgressPct');
+      const elPatcherProgressTrack = document.getElementById('patcherProgressTrack');
       const elPatcherProgressFill = document.getElementById('patcherProgressFill');
       const elPatcherStatus = document.getElementById('patcherStatus');
+      const elChmodBox = document.getElementById('chmodBox');
+      const elChmodCode = document.getElementById('chmodCode');
+      const elCopyChmodBtn = document.getElementById('copyChmodBtn');
+      const elPatcherCaveat = document.getElementById('patcherCaveat');
       const elInspectBar = document.getElementById('inspectBar');
       const elInspectFilesBtn = document.getElementById('inspectFilesBtn');
       const elToolbar = document.getElementById('toolbar');
@@ -3674,7 +4076,7 @@
         trayIconTargets: [],
         trayUnreadIconTargets: [],
         trayUploads: {
-          trayIcon: null, // { bytes, fileName, previewUrl, isDefault }
+          trayIcon: null, // { bytes, fileName, previewUrl, width, height, isDefault }
           trayUnreadIcon: null
         },
         showMatchedPaths: false,
@@ -3684,6 +4086,7 @@
         activeBuildPromise: null,
         readyBlob: null,
         readyFileName: null,
+        activeDownloadUrl: null,
         downloadWhenReady: false
       };
 
@@ -3711,15 +4114,23 @@
         return filename + '-PATCHED';
       }
 
+      function revokeActiveDownloadUrl() {
+        if (state.activeDownloadUrl) {
+          URL.revokeObjectURL(state.activeDownloadUrl);
+          state.activeDownloadUrl = null;
+        }
+      }
+
       function triggerBlobDownload(blob, filename) {
+        revokeActiveDownloadUrl();
         const url = URL.createObjectURL(blob);
+        state.activeDownloadUrl = url;
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 15000);
       }
 
       function revokeTrayPreviewUrls() {
@@ -3817,6 +4228,65 @@
         state.trayUnreadIconTargets = trayUnreadIcon;
       }
 
+      async function readArchiveFileSlice(entry, offset, length) {
+        if (entry.inAsar) {
+          if (entry.unpacked) return null;
+          let readSlice = null;
+          let hdrSize = 0;
+          let manifest = null;
+          if (state.detectedType === 'asar' && state.standaloneAsar) {
+            readSlice = (off, len) => state.sourceReader.read(off, len);
+            hdrSize = state.standaloneAsar.headerTotalSize;
+            manifest = state.standaloneAsar.manifest;
+          } else if (state.detectedType === 'squashfs' && state.sqfsModel && entry.asarPath) {
+            const info = state.sqfsModel.asarArchives.get(entry.asarPath);
+            if (info) {
+              readSlice = info.readSlice;
+              hdrSize = info.headerTotalSize;
+              manifest = info.manifest;
+            }
+          }
+          if (!readSlice || !manifest) return null;
+          const parts = entry.asarRelPath.split('/');
+          let cur = manifest.files;
+          for (let i = 0; i < parts.length; i++) {
+            const node = cur && cur[parts[i]];
+            if (!node) return null;
+            if (i === parts.length - 1) {
+              if (node.unpacked || typeof node.offset === 'undefined') return null;
+              const absOff = hdrSize + Number(node.offset) + offset;
+              return await readSlice(absOff, Math.min(length, Number(node.size || 0) - offset));
+            }
+            cur = node.files;
+          }
+          return null;
+        }
+        if (state.detectedType === 'squashfs' && state.sqfsModel && entry.sqfsInode) {
+          const r = state.sqfsModel.createFileReader(entry.sqfsInode);
+          const bytes = await r(offset, length);
+          if (r.clearCache) r.clearCache();
+          return bytes;
+        }
+        return null;
+      }
+
+      async function inspectTrayTargetDimensions() {
+        const allTargets = [...state.trayIconTargets, ...state.trayUnreadIconTargets];
+        for (const item of allTargets) {
+          if (item.size < 24 || item.unpacked) continue;
+          try {
+            const head = await readArchiveFileSlice(item, 0, 24);
+            if (head && head.length >= 24) {
+              const info = parsePngInfo(head);
+              item.origWidth = info.width;
+              item.origHeight = info.height;
+            }
+          } catch (_) {
+            // Best-effort dimension inspection only
+          }
+        }
+      }
+
       function applyDefaultTrayIcons() {
         if (state.trayIconTargets.length > 0) {
           const def = DEFAULT_TRAY_ICONS.trayIcon;
@@ -3842,6 +4312,17 @@
         }
       }
 
+      function invalidateReadyBuild() {
+        state.buildGen++;
+        state.readyBlob = null;
+        state.readyFileName = null;
+        state.downloadWhenReady = false;
+        elPatcherStatus.hidden = true;
+        elChmodBox.hidden = true;
+        elPatcherCaveat.hidden = true;
+        updateRepackButton();
+      }
+
       function updateRepackButton() {
         if (!isRepackSupported()) {
           elRepackBtn.hidden = true;
@@ -3849,10 +4330,8 @@
         }
         elRepackBtn.hidden = false;
         if (state.isRepacking) {
-          elRepackBtn.disabled = false;
-          elRepackBtn.textContent = state.downloadWhenReady
-            ? 'Downloading when ready...'
-            : 'Preparing -PATCHED...';
+          elRepackBtn.disabled = true;
+          elRepackBtn.textContent = 'Repacking...';
         } else if (state.readyBlob) {
           elRepackBtn.disabled = false;
           elRepackBtn.textContent = 'Download -PATCHED';
@@ -3870,10 +4349,34 @@
           const clamped = Math.max(0, Math.min(100, Math.round(pct || 0)));
           elPatcherProgressPct.textContent = clamped + '%';
           elPatcherProgressFill.style.width = clamped + '%';
+          elPatcherProgressTrack.setAttribute('aria-valuenow', String(clamped));
+        } else {
+          elPatcherProgressTrack.setAttribute('aria-valuenow', '0');
+        }
+      }
+
+      function setPatcherNotice(message) {
+        if (message) {
+          elPatcherNotice.textContent = message;
+          elPatcherNotice.hidden = false;
+        } else {
+          elPatcherNotice.textContent = '';
+          elPatcherNotice.hidden = true;
         }
       }
 
       function renderPatcherPanel() {
+        if (state.detectedType === 'iso9660') {
+          elPatcherPanel.hidden = false;
+          elPatcherSummary.textContent = 'AppImage Type 1 / ISO 9660 archive (read-only inspection).';
+          setPatcherNotice('Type 1 (ISO 9660) AppImages can be inspected here, but patching and repacking are only supported for Type 2 SquashFS AppImages and standalone .asar archives.');
+          elToggleMatchedPathsBtn.hidden = true;
+          elPatcherPathsBox.hidden = true;
+          elPatcherGrid.innerHTML = '';
+          updateRepackButton();
+          return;
+        }
+
         if (!isRepackSupported()) {
           elPatcherPanel.hidden = true;
           return;
@@ -3886,6 +4389,7 @@
 
         if (totalFound === 0) {
           elPatcherSummary.textContent = 'No trayIcon*.png or trayUnreadIcon*.png files detected. Click "Inspect files" below to replace individual files and repack.';
+          setPatcherNotice('');
           elToggleMatchedPathsBtn.hidden = true;
           elPatcherPathsBox.hidden = true;
           elPatcherGrid.innerHTML = '';
@@ -3897,7 +4401,20 @@
         if (nTray > 0) parts.push(nTray + ' trayIcon*.png');
         if (nUnread > 0) parts.push(nUnread + ' trayUnreadIcon*.png');
         elPatcherSummary.textContent =
-          'Found ' + parts.join(' and ') + '. Default icons are pre-selected and patching starts immediately; use "Select PNG" to load custom images.';
+          'Found ' + parts.join(' and ') + '. Default icons are pre-selected; drop or select custom PNGs if desired, then click "Patch & Download".';
+
+        // Check if any matched tray icon in standalone ASAR is already unpacked
+        if (state.detectedType === 'asar') {
+          const allTargets = [...state.trayIconTargets, ...state.trayUnreadIconTargets];
+          const unpackedTargets = allTargets.filter((t) => t.unpacked);
+          if (unpackedTargets.length > 0) {
+            setPatcherNotice('Note: ' + unpackedTargets.length + ' matched icon(s) are marked unpacked outside the .asar. Replacing them will bundle an updated app.asar.unpacked folder inside a .zip download.');
+          } else {
+            setPatcherNotice('');
+          }
+        } else {
+          setPatcherNotice('');
+        }
 
         elToggleMatchedPathsBtn.hidden = false;
         elToggleMatchedPathsBtn.textContent = state.showMatchedPaths ? 'Hide matched paths' : 'Show matched paths (' + totalFound + ')';
@@ -3907,10 +4424,11 @@
           const allTargets = [...state.trayIconTargets, ...state.trayUnreadIconTargets];
           elPatcherPathsBox.innerHTML = allTargets.map((item) => {
             const patched = state.replacements.has(item.path);
+            const dimStr = (item.origWidth && item.origHeight) ? (' · ' + item.origWidth + '×' + item.origHeight) : '';
             return '<div class="patcher-path-item">' +
               '<span class="patcher-path-str" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span>' +
               '<span class="patcher-path-tag' + (patched ? ' is-patched' : '') + '">' +
-                (patched ? 'Patched' : formatBytes(item.size)) +
+                (patched ? 'Patched' + dimStr : formatBytes(item.size) + dimStr) +
               '</span>' +
             '</div>';
           }).join('');
@@ -3929,14 +4447,62 @@
 
       function buildTrayCardHtml(kind, expectedName, targets, upload) {
         const sampleNames = targets.slice(0, 3).map((t) => t.name).join(', ') + (targets.length > 3 ? ', ...' : '');
-        const isReady = Boolean(upload);
+        let patchedByCard = 0;
+        let patchedAny = 0;
+        for (const t of targets) {
+          const rep = state.replacements.get(t.path);
+          if (rep) {
+            patchedAny++;
+            if (rep.kind === kind) patchedByCard++;
+          }
+        }
+        const revertedCount = targets.length - patchedAny;
+        const isReady = Boolean(upload) && patchedAny > 0;
+
         const thumbHtml = isReady
           ? '<img src="' + upload.previewUrl + '" alt="' + escapeHtml(expectedName) + '" />'
           : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-        const sourceTag = isReady ? (upload.isDefault ? 'Default' : 'Custom') : '';
-        const metaText = isReady
-          ? sourceTag + ': ' + escapeHtml(upload.fileName) + ' (' + formatBytes(upload.bytes.length) + ') -> ' + targets.length + (targets.length === 1 ? ' file' : ' files')
-          : 'Replaces ' + targets.length + (targets.length === 1 ? ' file' : ' files') + ': ' + escapeHtml(sampleNames);
+
+        let metaText;
+        if (!upload || patchedAny === 0) {
+          metaText = 'Original kept (0 of ' + targets.length + (targets.length === 1 ? ' file' : ' files') + ' patched)';
+        } else {
+          const sourceTag = upload.isDefault ? 'Default' : 'Custom';
+          const dims = (upload.width && upload.height) ? (upload.width + '×' + upload.height + ' px, ') : '';
+          const countDesc = revertedCount > 0
+            ? (patchedAny + ' of ' + targets.length + ' files (' + revertedCount + ' reverted)')
+            : (targets.length + (targets.length === 1 ? ' file' : ' files'));
+          metaText = sourceTag + ': ' + escapeHtml(upload.fileName) + ' (' + dims + formatBytes(upload.bytes.length) + ') -> ' + countDesc;
+        }
+
+        let warnHtml = '';
+        if (isReady && upload.width && upload.height) {
+          const mismatched = [];
+          let aspectMismatch = false;
+          const upRatio = upload.width / upload.height;
+          for (const t of targets) {
+            const rep = state.replacements.get(t.path);
+            if (!rep || rep.kind !== kind) continue;
+            if (t.origWidth && t.origHeight) {
+              if (t.origWidth !== upload.width || t.origHeight !== upload.height) {
+                mismatched.push(t.name + ' (' + t.origWidth + '×' + t.origHeight + ')');
+              }
+              const origRatio = t.origWidth / t.origHeight;
+              if (Math.abs(upRatio - origRatio) > 0.05) {
+                aspectMismatch = true;
+              }
+            }
+          }
+          if (mismatched.length > 0) {
+            const previewList = mismatched.slice(0, 2).join(', ') + (mismatched.length > 2 ? ', +' + (mismatched.length - 2) + ' more' : '');
+            warnHtml = '<div class="patcher-card-warn">' +
+              (aspectMismatch ? 'Aspect ratio & size mismatch: ' : 'Dimension mismatch: ') +
+              escapeHtml(previewList) + ' will be replaced with ' + upload.width + '×' + upload.height + '.</div>';
+          }
+        }
+
+        const showReapplyDefault = (!isReady || !upload || !upload.isDefault || revertedCount > 0);
+        const defaultBtnLabel = patchedAny === 0 ? 'Apply Default' : 'Default';
 
         return (
           '<div class="patcher-card' + (isReady ? ' is-ready' : '') + '" data-tray-card="' + kind + '">' +
@@ -3945,10 +4511,11 @@
               '<div class="patcher-card-info">' +
                 '<div class="patcher-card-name">' + escapeHtml(expectedName) + '</div>' +
                 '<div class="patcher-card-meta" title="' + escapeHtml(sampleNames) + '">' + metaText + '</div>' +
+                warnHtml +
               '</div>' +
             '</div>' +
             '<div class="patcher-card-actions">' +
-              (isReady && !upload.isDefault ? '<button type="button" class="patcher-card-btn" data-reset-tray="' + kind + '">Default</button>' : '') +
+              (showReapplyDefault ? '<button type="button" class="patcher-card-btn" data-reset-tray="' + kind + '">' + defaultBtnLabel + '</button>' : '') +
               '<button type="button" class="patcher-card-btn" data-pick-tray="' + kind + '">Select PNG</button>' +
             '</div>' +
           '</div>'
@@ -3957,12 +4524,32 @@
 
       async function applyTrayReplacement(kind, file) {
         if (!file) return;
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        const previewUrl = URL.createObjectURL(new Blob([bytes], { type: file.type || 'image/png' }));
+        let bytes;
+        let pngInfo;
+        try {
+          bytes = new Uint8Array(await file.arrayBuffer());
+          pngInfo = parsePngInfo(bytes);
+        } catch (err) {
+          elErrorBox.textContent = err && err.message ? err.message : 'Invalid PNG file.';
+          elErrorBox.classList.add('is-visible');
+          return;
+        }
+
+        elErrorBox.classList.remove('is-visible');
+        elErrorBox.textContent = '';
+
+        const previewUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
         if (state.trayUploads[kind] && !state.trayUploads[kind].isDefault && state.trayUploads[kind].previewUrl) {
           URL.revokeObjectURL(state.trayUploads[kind].previewUrl);
         }
-        state.trayUploads[kind] = { bytes, fileName: file.name, previewUrl, isDefault: false };
+        state.trayUploads[kind] = {
+          bytes,
+          fileName: file.name,
+          previewUrl,
+          width: pngInfo.width,
+          height: pngInfo.height,
+          isDefault: false
+        };
 
         const targets = kind === 'trayIcon' ? state.trayIconTargets : state.trayUnreadIconTargets;
         for (const item of targets) {
@@ -3973,12 +4560,14 @@
           });
         }
 
+        invalidateReadyBuild();
         renderPatcherPanel();
         if (state.showFileInspector) renderVirtualWindow();
-        scheduleBuildPatchedArchive(false);
       }
 
       function resetTrayToDefault(kind) {
+        elErrorBox.classList.remove('is-visible');
+        elErrorBox.textContent = '';
         if (state.trayUploads[kind] && !state.trayUploads[kind].isDefault && state.trayUploads[kind].previewUrl) {
           URL.revokeObjectURL(state.trayUploads[kind].previewUrl);
         }
@@ -3992,46 +4581,48 @@
             kind
           });
         }
+        invalidateReadyBuild();
         renderPatcherPanel();
         if (state.showFileInspector) renderVirtualWindow();
-        scheduleBuildPatchedArchive(false);
       }
 
-      function scheduleBuildPatchedArchive(autoDownload) {
-        if (!state.sourceFile || !isRepackSupported()) return;
+      function showDownloadGuidance(outName, outSize, extraStatus) {
+        const baseMsg = 'Downloaded ' + outName + ' (' + formatBytes(outSize) + ').';
+        elPatcherStatus.textContent = extraStatus ? (baseMsg + ' ' + extraStatus) : baseMsg;
+        elPatcherStatus.hidden = false;
+
+        if (state.detectedType === 'squashfs') {
+          elChmodCode.textContent = 'chmod +x "' + outName + '"';
+          elCopyChmodBtn.textContent = 'Copy command';
+          elChmodBox.hidden = false;
+          elPatcherCaveat.textContent = 'Note: Repacking preserves the original ELF runtime and writes an unsigned Type 2 gzip SquashFS without xattrs or fragments. Any embedded ELF signature or digest from the original AppImage is no longer valid on the patched file.';
+          elPatcherCaveat.hidden = false;
+        } else {
+          elChmodBox.hidden = true;
+          elPatcherCaveat.textContent = 'Note: Standalone .asar repacking updates the archive header and integrity hashes when present.';
+          elPatcherCaveat.hidden = false;
+        }
+      }
+
+      async function buildAndDownloadPatchedArchive() {
+        if (!state.sourceFile || !isRepackSupported() || state.isRepacking) return;
+
         state.buildGen++;
         const myGen = state.buildGen;
-        state.readyBlob = null;
-        state.readyFileName = null;
-        if (autoDownload) {
-          state.downloadWhenReady = true;
-        }
-        elPatcherStatus.hidden = true;
-        updateRepackButton();
-
-        const runAfterPrev = async () => {
-          if (state.activeBuildPromise) {
-            try { await state.activeBuildPromise; } catch (_) {}
-          }
-          if (myGen !== state.buildGen) return;
-          await buildPatchedArchive(myGen);
-        };
-        state.activeBuildPromise = runAfterPrev();
-      }
-
-      async function buildPatchedArchive(myGen) {
-        if (!state.sourceFile || !isRepackSupported() || myGen !== state.buildGen) return;
-
         const shouldAbort = () => myGen !== state.buildGen;
         state.isRepacking = true;
         elErrorBox.classList.remove('is-visible');
+        elErrorBox.textContent = '';
         elPatcherStatus.hidden = true;
+        elChmodBox.hidden = true;
+        elPatcherCaveat.hidden = true;
         updateRepackButton();
         setPatcherProgress(true, 'Preparing patched archive...', 4);
 
         try {
-          const outName = makePatchedFilename(state.sourceFile.name);
+          let outName = makePatchedFilename(state.sourceFile.name);
           let outBlob = null;
+          let extraStatus = '';
 
           if (state.detectedType === 'asar' && state.standaloneAsar) {
             const repMap = new Map();
@@ -4054,7 +4645,7 @@
             });
             if (shouldAbort()) return;
 
-            setPatcherProgress(true, 'Building ' + outName + '...', 85);
+            setPatcherProgress(true, 'Building ' + outName + '...', 80);
             const parts = [asarResult.headerBuf];
             for (const chunk of asarResult.packedChunks) {
               if (chunk.kind === 'mem') {
@@ -4063,8 +4654,38 @@
                 parts.push(state.sourceFile.slice(chunk.offset, chunk.offset + chunk.size));
               }
             }
-            outBlob = new Blob(parts, { type: 'application/octet-stream' });
+            const asarBlob = new Blob(parts, { type: 'application/octet-stream' });
+
+            if (asarResult.unpackedFilesToWrite.length > 0) {
+              setPatcherProgress(true, 'Bundling .asar + unpacked sidecar files...', 90);
+              const asarBytes = new Uint8Array(await asarBlob.arrayBuffer());
+              const zipEntries = [
+                { path: outName, bytes: asarBytes, executable: false }
+              ];
+              for (const u of asarResult.unpackedFilesToWrite) {
+                zipEntries.push({
+                  path: outName + '.unpacked/' + u.relPath,
+                  bytes: u.bytes,
+                  executable: Boolean(u.executable)
+                });
+              }
+              const dotIdx = outName.lastIndexOf('.');
+              outName = (dotIdx > 0 ? outName.slice(0, dotIdx) : outName) + '.zip';
+              outBlob = createStoredZipBlob(zipEntries);
+              extraStatus = 'Bundled ' + asarResult.unpackedFilesToWrite.length + ' unpacked file(s) under .asar.unpacked/.';
+            } else {
+              outBlob = asarBlob;
+            }
+
+            if (asarResult.preExistingUnpackedCount > 0) {
+              setPatcherNotice(
+                'Reminder: ' + asarResult.preExistingUnpackedCount +
+                ' unmodified file(s) remain marked unpacked outside the .asar; keep the original .asar.unpacked folder alongside ' +
+                (asarResult.unpackedFilesToWrite.length > 0 ? 'the extracted archive.' : outName + '.')
+              );
+            }
           } else if (state.detectedType === 'squashfs' && state.sqfsModel) {
+            requireCompressDeflate();
             const sqfsFileReplacements = new Map();
             const perAsarReplacements = new Map();
 
@@ -4135,21 +4756,13 @@
 
           state.readyBlob = outBlob;
           state.readyFileName = outName;
-          setPatcherProgress(true, 'Ready', 100);
-
-          if (state.downloadWhenReady) {
-            state.downloadWhenReady = false;
-            triggerBlobDownload(outBlob, outName);
-            elPatcherStatus.textContent = 'Downloaded ' + outName + ' (' + formatBytes(outBlob.size) + ').';
-          } else {
-            elPatcherStatus.textContent = 'Ready to save: ' + outName + ' (' + formatBytes(outBlob.size) + '). Click "Download -PATCHED" to save.';
-          }
-          elPatcherStatus.hidden = false;
+          setPatcherProgress(true, 'Complete', 100);
+          triggerBlobDownload(outBlob, outName);
+          showDownloadGuidance(outName, outBlob.size, extraStatus);
         } catch (err) {
           if (err && err.message === '__BUILD_ABORTED__') {
             return;
           }
-          state.downloadWhenReady = false;
           elErrorBox.textContent = err && err.message ? err.message : 'Failed to repack archive.';
           elErrorBox.classList.add('is-visible');
         } finally {
@@ -4166,19 +4779,13 @@
       }
 
       function handleSaveOrRepackClick() {
-        if (!state.sourceFile || !isRepackSupported()) return;
+        if (!state.sourceFile || !isRepackSupported() || state.isRepacking) return;
         if (state.readyBlob && state.readyFileName) {
           triggerBlobDownload(state.readyBlob, state.readyFileName);
-          elPatcherStatus.textContent = 'Downloaded ' + state.readyFileName + ' (' + formatBytes(state.readyBlob.size) + ').';
-          elPatcherStatus.hidden = false;
+          showDownloadGuidance(state.readyFileName, state.readyBlob.size, '');
           return;
         }
-        if (state.isRepacking) {
-          state.downloadWhenReady = !state.downloadWhenReady;
-          updateRepackButton();
-          return;
-        }
-        scheduleBuildPatchedArchive(true);
+        buildAndDownloadPatchedArchive();
       }
 
       function computeVisibleRows() {
@@ -4321,19 +4928,23 @@
       async function handleFile(file) {
         if (!file) return;
 
-        // Abort any in-flight background build from a previous file
+        // Abort any in-flight build and release previous download URL
         state.buildGen++;
         state.isRepacking = false;
         state.readyBlob = null;
         state.readyFileName = null;
         state.downloadWhenReady = false;
+        revokeActiveDownloadUrl();
 
         elLanding.classList.add('is-hidden');
         elWorkspace.classList.add('is-visible');
         elErrorBox.classList.remove('is-visible');
         elErrorBox.textContent = '';
         elPatcherPanel.hidden = true;
+        setPatcherNotice('');
         elPatcherStatus.hidden = true;
+        elChmodBox.hidden = true;
+        elPatcherCaveat.hidden = true;
         setPatcherProgress(false);
         elRepackBtn.hidden = true;
         elInspectBar.hidden = true;
@@ -4405,6 +5016,22 @@
             else fileCount++;
           }
 
+          if (result.sqfsModel) {
+            const attachSqfsInode = (treeNode) => {
+              if (!treeNode) return;
+              if (treeNode.path) {
+                const entryObj = result.entries.find((e) => !e.inAsar && e.path === treeNode.path);
+                if (entryObj && treeNode.inode) {
+                  entryObj.sqfsInode = treeNode.inode;
+                }
+              }
+              if (treeNode.children) {
+                for (const ch of treeNode.children) attachSqfsInode(ch);
+              }
+            };
+            attachSqfsInode(result.sqfsModel.rootNode);
+          }
+
           const sortedFlat = result.entries.slice().sort((a, b) =>
             a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' })
           );
@@ -4412,7 +5039,10 @@
           state.allEntries = sortedFlat;
           buildTreeIndex(sortedFlat);
           scanTrayIconTargets(sortedFlat);
-          applyDefaultTrayIcons();
+          if (isRepackSupported()) {
+            await inspectTrayTargetDimensions();
+            applyDefaultTrayIcons();
+          }
 
           const metaParts = [
             '<span>' + escapeHtml(appType) + '</span>',
@@ -4437,11 +5067,6 @@
           applyFileInspectorVisibility();
 
           renderPatcherPanel();
-
-          // Start building the patched archive immediately with the default tray icons
-          if (isRepackSupported() && (state.trayIconTargets.length > 0 || state.trayUnreadIconTargets.length > 0)) {
-            scheduleBuildPatchedArchive(false);
-          }
         } catch (err) {
           elLoadingPanel.classList.remove('is-visible');
           elTableShell.style.display = 'none';
@@ -4500,9 +5125,21 @@
           sourceName: file.name,
           kind: 'manual'
         });
+        invalidateReadyBuild();
         renderPatcherPanel();
         renderVirtualWindow();
-        scheduleBuildPatchedArchive(false);
+      });
+
+      elCopyChmodBtn.addEventListener('click', async () => {
+        const cmd = elChmodCode.textContent;
+        if (!cmd) return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(cmd);
+            elCopyChmodBtn.textContent = 'Copied!';
+            setTimeout(() => { elCopyChmodBtn.textContent = 'Copy command'; }, 1800);
+          }
+        } catch (_) {}
       });
 
       elToggleMatchedPathsBtn.addEventListener('click', () => {
@@ -4535,12 +5172,14 @@
         if (!card) return;
         e.preventDefault();
         e.stopPropagation();
+        elDropOverlay.classList.remove('is-active');
         card.classList.add('is-dragover');
       });
 
       elPatcherGrid.addEventListener('dragleave', (e) => {
         const card = e.target.closest('[data-tray-card]');
         if (!card) return;
+        if (e.relatedTarget && card.contains(e.relatedTarget)) return;
         card.classList.remove('is-dragover');
       });
 
@@ -4597,9 +5236,9 @@
         if (revertBtn) {
           e.stopPropagation();
           state.replacements.delete(revertBtn.dataset.revertPath);
+          invalidateReadyBuild();
           renderPatcherPanel();
           renderVirtualWindow();
-          scheduleBuildPatchedArchive(false);
           return;
         }
         if (state.viewMode !== 'tree' || state.query.trim().length > 0) return;
@@ -4613,6 +5252,13 @@
         if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
         e.preventDefault();
         state.dragCounter++;
+        if (e.target && e.target.closest && e.target.closest('[data-tray-card]')) {
+          elDropOverlay.classList.remove('is-active');
+          return;
+        }
+        elDropLabel.textContent = state.sourceFile
+          ? 'Drop Beeper.AppImage or .asar to load, or drop PNG onto a tray card'
+          : 'Drop Beeper.AppImage or .asar here';
         elDropOverlay.classList.add('is-active');
       });
 
@@ -4635,7 +5281,24 @@
         state.dragCounter = 0;
         elDropOverlay.classList.remove('is-active');
         const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (!file) return;
+        const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+        if (isPng) {
+          if (state.sourceFile) {
+            elErrorBox.textContent = 'Drop a PNG directly onto the trayIcon.png or trayUnreadIcon.png card to replace that icon (current archive preserved).';
+            elErrorBox.classList.add('is-visible');
+          } else {
+            elErrorBox.textContent = 'Please load Beeper.AppImage or an .asar archive first before dropping a PNG icon.';
+            elErrorBox.classList.add('is-visible');
+          }
+          return;
+        }
+        handleFile(file);
+      });
+
+      window.addEventListener('beforeunload', () => {
+        revokeActiveDownloadUrl();
+        revokeTrayPreviewUrls();
       });
     })();
   </script>
