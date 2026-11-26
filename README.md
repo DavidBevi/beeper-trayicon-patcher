@@ -7,7 +7,7 @@
 
 # Web page
 - **[beeper-trayicon-patcher web](https://davidbevi.github.io/beeper-trayicon-patcher)**
-- much faster, works offline, you can download [[`index.html`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html)] and it'll launch offline
+- much faster, patches offline, you can download the webpage for offline launch+use [download [`index.html`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html)]
 - `🤖 AI-made`: I dislike AI more than I like it, but I had to attended an AI-course and make something `╮(°᎑°)╭`
 
 <br>
