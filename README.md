@@ -1,13 +1,20 @@
-# beeper-trayicon-patcher<br><sub><sup>A script to customize the systray icons of Beeper AppImage (Linux)</sup></sub>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7dc3a2ef-7bcb-411b-af10-8e9d4c9ba4e5" align="center">
+  <div align="center">Customize the systray icons of Beeper.AppImage: use my icons or your own ones!</div>
+</p>
 
-| SHELL SCRIPT version (`.sh`, man-made) | WEB PAGE version (`.html`, AI-made) |
-|-|-|
-| Requires<br>- installing [`asar`](https://github.com/electron/asar)<br>- running a command to download and launch installer | Requires <br>- [going to the webpage](https://davidbevi.github.io/beeper-trayicon-patcher)<br>- following instructions |
-| Patches offline in ~1 minute | Patches offline in ~3 seconds |
-| Loads offline once you download the script and required files | Loads offline if you save the [html page](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html) (it's self sufficient) |
-| NOTE: CLI has many options for advanced use, its code is shorter and easier to inspect | NOTE: the patched AppImage requires *you* to give it executable permission (`chmod +x`) |
+<br>
 
-## Installing the script
+# Web page
+- **[beeper-trayicon-patcher web](https://davidbevi.github.io/beeper-trayicon-patcher)**
+- much faster, works offline, you can download [[`index.html`](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html)] and it'll launch offline
+- `🤖 AI-made`: I dislike AI more than I like it, but I had to attended an AI-course and make something `╮(°᎑°)╭`
+
+<br>
+
+# Bash script
+- `❤️ human-made`
+- has many options for advanced use (see them below)
 - **PREP**: install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
 - **AUTO-INSTALL**: open a CLI in the working dir of your choice, then launch the guided installer with `curl -O https://raw.githubusercontent.com/DavidBevi/beeper-trayicon-patcher/refs/heads/main/beeper-trayicon-patcher.sh && source beeper-trayicon-patcher.sh install`
 
@@ -23,18 +30,13 @@ Put in a directory of your choice:
   - `[CLI]`: `chmod +x "/path/to/beeper-trayicon-patcher.sh"`
 </details>
 
-## Usage options
+### Usage options
 - `[GUI]`: double-click `beeper-trayicon-patcher.sh` to patch with the files in that directory
 - `[GUI]`: select all the required files and drag-n-drop them onto `beeper-trayicon-patcher.sh`
 - `[CLI]` directly: `"/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
 - `[CLI]` sourcing: `. "/path/to/beeper-trayicon-patcher.sh" [OPTION...]`
 
-<details><summary>Demo gif</summary>
-
-![Demo gif](./bpr-patcher-demo.gif)
-</details>
-
-## Optional arguments (`CLI`)
+### Optional arguments (`CLI`)
 - `install` to launch the guided installer
 - `-h` or `--help` to show help page and exit
 - `-v` or `--version` to show version and exit
@@ -44,4 +46,5 @@ Put in a directory of your choice:
 
 ----
 
-<img width="600" height="600" alt="beeper systray icon drake meme" src="https://github.com/user-attachments/assets/55d02c30-a18c-432e-84ff-c4d6df6bc8a7" />
+### Demo gif
+![Demo gif](./bpr-patcher-demo.gif)
