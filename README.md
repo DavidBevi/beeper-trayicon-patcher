@@ -3,10 +3,9 @@
 | SHELL SCRIPT version (`.sh`, man-made) | WEB PAGE version (`.html`, AI-made) |
 |-|-|
 | Requires<br>- installing [`asar`](https://github.com/electron/asar)<br>- running a command to download and launch installer | Requires <br>- [going to the webpage](https://davidbevi.github.io/beeper-trayicon-patcher)<br>- following instructions |
-| Patching takes ~1 minute | Patching takes ~3 seconds |
-| Patches offline | Patches offline |
+| Patches offline in ~1 minute | Patches offline in ~3 seconds |
 | Loads offline once you download the script and required files | Loads offline if you save the [html page](https://git-link.vercel.app/api/download?url=https%3A%2F%2Fgithub.com%2FDavidBevi%2Fbeeper-trayicon-patcher%2Fblob%2Fmain%2Findex.html) (it's self sufficient) |
-| NOTE: it offers a CLI interface with many options, its code is shorter and easier to inspect | NOTE: the patched AppImage requires you to give it executable permission (`chmod +x`) |
+| NOTE: CLI has many options for advanced use, its code is shorter and easier to inspect | NOTE: the patched AppImage requires *you* to give it executable permission (`chmod +x`) |
 
 ## Installing the script
 - **PREP**: install the dependency `asar` [`[github/asar]`](https://github.com/electron/asar)
